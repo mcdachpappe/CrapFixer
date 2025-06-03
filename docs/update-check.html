@@ -182,13 +182,26 @@
         const result = compareVersions(userVersion, latestVersion);
 
         if (result < 0) {
-          status.innerHTML = `⚠️ Your version (${userVersion}) is outdated.<br><strong>Latest version:</strong> ${latestVersion}<br><a href="https://github.com/builtbybel/CrapFixer/releases">⬇️ Download here</a>`;
-        } else if (result === 0) {
+        	  ⚠️ Your version (${userVersion}) is outdated.<br>
+	  <strong>Latest version:</strong> ${latestVersion}<br>
+	  <a href="https://github.com/builtbybel/CrapFixer/releases" target="_blank">⬇️ Download here</a>
+	  &nbsp;|&nbsp;
+	  <a href="#" onclick="openChangelog('${latestVersion}')">📄 View Changelog</a>
+	`;
+
+	} else if (result === 0) {
           status.innerHTML = `✅ Your version (${userVersion}) is up to date.`;
         } else {
           status.innerHTML = `✅ Your version (${userVersion}) is newer than the official release (${latestVersion}).<br><em>Note: You may be using a development build.</em>`;
         }
       }
+	    
+	<!-- Show changelogWindow-->
+	function openChangelog(version) {
+	const url = `https://github.com/builtbybel/CrapFixer/releases/tag/${version}`;
+	window.open(url, "changelogWindow", "width=800,height=600,resizable=yes,scrollbars=yes");
+	}
+
     </script>
   </body>
 </html>
