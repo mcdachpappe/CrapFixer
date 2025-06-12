@@ -13,6 +13,7 @@ url=https://raw.githubusercontent.com/builtbybel/Crapfixer/refs/heads/main/plugi
 [Remove Windows AI]
 description=Disables and removes AI-related features and integrations in Windows.
 url=https://raw.githubusercontent.com/builtbybel/Crapfixer/refs/heads/main/plugins/Remove Windows AI.ps1
+Developer: zoicware | Web: https://github.com/zoicware/RemoveWindowsAI
 
 [Restart Explorer]
 description=Restarts the Windows Explorer process to apply changes or recover from crashes.
