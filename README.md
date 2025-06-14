@@ -3,9 +3,7 @@
 
 # Crap F🧼xer – Fixes the crap Windows leaves behind.
 
-# The tool that says what everyone's thinking
-
-## The tool Microsoft would build if they hated bloatware as much as we do
+## The tool that says what everyone's thinking
 
 Remember the days when you'd run a registry cleaner even if you didn't really need it? (Or maybe we did need it? I was probably too young to figure that out - too young for that crap 😅) <br>Back then, cleaner tools like CCleaner were everywhere; it felt like every other tech forum had a "top 10 Windows Optimizers" list.
 
