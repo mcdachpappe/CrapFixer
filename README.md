@@ -15,7 +15,7 @@ CrapFixer still looks like something straight out of the Windows XP era (maybe C
 
 While cleaning up my GitHub (30+ repos down to 20 now), I also cleaned up thousands of lines of old code. Some projects come and go, but CrapFixer stays. It's fast, simple, and basically bulletproof. I haven't managed to break anything yet. 😉 <br>If you like old-school tools that just work, you're gonna feel right at home. <br>If there's enough interest, I'll also commit the updated code to GitHub soon.
 
-![Crap_Fixer_RThhOG6Slz](https://github.com/user-attachments/assets/f16b4f49-7eb4-4ca0-bcf8-c061d7661457)
+![CrapFixer](https://github.com/user-attachments/assets/cff37456-5676-4e3a-85a7-0c71e39e2bd0)
 
 
 <details>
