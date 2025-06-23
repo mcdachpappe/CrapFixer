@@ -3,9 +3,7 @@
 
 # Crap F🧼xer – Fixes the crap Windows leaves behind.
 
-# The tool that says what everyone's thinking
-
-## The tool Microsoft would build if they hated bloatware as much as we do
+## The tool that says what everyone's thinking
 
 Remember the days when you'd run a registry cleaner even if you didn't really need it? (Or maybe we did need it? I was probably too young to figure that out - too young for that crap 😅) <br>Back then, cleaner tools like CCleaner were everywhere; it felt like every other tech forum had a "top 10 Windows Optimizers" list.
 
@@ -17,7 +15,7 @@ CrapFixer still looks like something straight out of the Windows XP era (maybe C
 
 While cleaning up my GitHub (30+ repos down to 20 now), I also cleaned up thousands of lines of old code. Some projects come and go, but CrapFixer stays. It's fast, simple, and basically bulletproof. I haven't managed to break anything yet. 😉 <br>If you like old-school tools that just work, you're gonna feel right at home. <br>If there's enough interest, I'll also commit the updated code to GitHub soon.
 
-![explorer_xu59FtMUnG](https://github.com/user-attachments/assets/fe462326-ebfb-41ea-83b5-d4cf72659c2d)
+![CrapFixer](https://github.com/user-attachments/assets/cff37456-5676-4e3a-85a7-0c71e39e2bd0)
 
 
 <details>
