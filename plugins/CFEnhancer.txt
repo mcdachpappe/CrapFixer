@@ -1,6 +1,9 @@
 # Whitelist entries (do not flag these)
 !GetHelp
 
+# Global hide via wildcard. Remove ! to unhide all.
+!*.*  
+
 # Bloatware patterns
 Solitaire
 CandyCrush
