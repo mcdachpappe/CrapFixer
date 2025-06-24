@@ -13,7 +13,7 @@ This is my personal little IT toolbox that I've been using for years to clean up
 
 CrapFixer still looks like something straight out of the Windows XP era (maybe Crap Cleaner 😄) - and honestly, that's exactly the vibe I was going for. Sometimes simple just beats fancy. Two clicks: 'Analyze', check the results, 'Fix' - done. No drama, no bloat.
 
-While cleaning up my GitHub (30+ repos down to 20 now), I also cleaned up thousands of lines of old code. Some projects come and go, but CrapFixer stays. It's fast, simple, and basically bulletproof. I haven't managed to break anything yet. 😉 <br>If you like old-school tools that just work, you're gonna feel right at home. <br>If there's enough interest, I'll also commit the updated code to GitHub soon.
+While cleaning up my GitHub (30+ repos down to 20 now), I also cleaned up thousands of lines of old code. Some projects come and go, but CrapFixer stays. It's fast, simple, and basically bulletproof. I haven't managed to break anything yet. 😉 <br>If you like old-school tools that just work, you're gonna feel right at home. <br>
 
 ![CrapFixer](https://github.com/user-attachments/assets/cff37456-5676-4e3a-85a7-0c71e39e2bd0)
 
@@ -39,7 +39,7 @@ If you're curious about the personal story behind this project and others...
    - **Gray** items = Already optimized
 
 3. **Apply Fixes**  
-   Smash the **"Run CFixer!"** button to apply the recommended tweaks.
+   Smash the **"Run Fixer"** button to apply the recommended tweaks.
    
 > ⚠️ **Tip:** To view what a tweak does you can **Right-Click** on an item and select **Help** or hit **F1**.  
 > The help system also includes an online lookup that will search the tweak online for you.
