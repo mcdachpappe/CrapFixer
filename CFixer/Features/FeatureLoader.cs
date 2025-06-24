@@ -1,13 +1,13 @@
-﻿using Settings.Issues;
-using Settings.Ads;
+﻿using Settings.Ads;
 using Settings.AI;
 using Settings.Edge;
 using Settings.Gaming;
+using Settings.Issues;
 using Settings.Personalization;
 using Settings.Privacy;
 using Settings.System;
-using System.Collections.Generic;
 using Settings.UI;
+using System.Collections.Generic;
 
 namespace Features
 {
@@ -69,6 +69,7 @@ namespace Features
                        new FeatureNode(new ShowOrHideMostUsedApps()),
                        new FeatureNode(new ShowTaskViewButton()),
                        new FeatureNode(new DisableSearchBoxSuggestions()),
+                       new FeatureNode(new DisableBingSearch()),
                        new FeatureNode(new StartLayout()),
                        new FeatureNode(new TaskbarAlignment()),
                        new FeatureNode(new Transparency()),
@@ -121,7 +122,7 @@ namespace Features
                     {
                        new FeatureNode(new CopilotTaskbar()),
                        new FeatureNode(new Recall()),
-                       new FeatureNode(new AskCopilot()),
+                       new FeatureNode(new ClickToDo()) { DefaultChecked = false },
                     }
                 },
             };

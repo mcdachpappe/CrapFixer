@@ -23,7 +23,6 @@ namespace Settings.Issues
                 var totalSize = GetDirectorySize(tempPath);
 
                 bool isOk = totalSize <= 50;
- 
 
                 return Task.FromResult(isOk);
             }
@@ -34,13 +33,12 @@ namespace Settings.Issues
             }
         }
 
-
         public override string GetFeatureDetails()
         {
             try
             {
                 var totalSize = GetDirectorySize(tempPath);
-                return $"Temp folder size: {totalSize} MB (We need also to include cleanmgr in the next run)";
+                return $"Temp folder size: {totalSize} MB (including cleanmgr /sagerun:1 in the next run)";
             }
             catch (Exception ex)
             {
@@ -53,7 +51,7 @@ namespace Settings.Issues
         {
             try
             {
-                await CleanTempFolderAsync(); 
+                await CleanTempFolderAsync();
                 await RunDiskCleanup();
                 Logger.Log("Basic Cleanup completed successfully.", LogLevel.Info);
                 return true;
@@ -65,7 +63,6 @@ namespace Settings.Issues
             }
         }
 
-
         private async Task CleanTempFolderAsync()
         {
             var files = await Task.Run(() => Directory.GetFiles(tempPath, "*", SearchOption.AllDirectories));
@@ -75,7 +72,7 @@ namespace Settings.Issues
             {
                 try
                 {
-                await Task.Run(() => File.Delete(file)); 
+                    await Task.Run(() => File.Delete(file));
                     Logger.Log($"Deleted file: {file}", LogLevel.Info);
                 }
                 catch (Exception ex)
@@ -98,7 +95,6 @@ namespace Settings.Issues
             }
         }
 
-
         // calculate the size of the directory in MB
         private long GetDirectorySize(string directory)
         {
@@ -109,7 +105,6 @@ namespace Settings.Issues
 
                 // Calculate size of all files
                 size += directoryInfo.GetFiles("*", SearchOption.AllDirectories).Sum(file => file.Length);
-
 
                 return size / (1024 * 1024);                 // return size in MB
             }
@@ -144,13 +139,13 @@ namespace Settings.Issues
                 using (var process1 = Process.Start(startInfo1))
                 {
                     if (process1 != null)
-                        await Task.Run(() => process1.WaitForExit());  
+                        await Task.Run(() => process1.WaitForExit());
                 }
 
                 using (var process2 = Process.Start(startInfo2))
                 {
                     if (process2 != null)
-                        await Task.Run(() => process2.WaitForExit()); 
+                        await Task.Run(() => process2.WaitForExit());
                 }
             }
             catch (Exception ex)
@@ -158,7 +153,6 @@ namespace Settings.Issues
                 Logger.Log($"Error running Disk Cleanup: {ex.Message}", LogLevel.Warning);
             }
         }
-
 
         // Undo method: Cleanup cannot be undone, so return false
         public override bool UndoFeature() => false;

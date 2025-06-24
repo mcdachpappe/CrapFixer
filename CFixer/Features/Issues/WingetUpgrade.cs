@@ -1,7 +1,8 @@
-﻿using System;
+﻿using CrapFixer;
+using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.Threading.Tasks;
-using CrapFixer;
 
 namespace Settings.System
 {
@@ -29,9 +30,9 @@ namespace Settings.System
 
             try
             {
-                string output = await ExecuteCommand("winget upgrade --include-unknown");
+                string output = await ExecuteCommand("winget upgrade --include-unknown" );
 
-                Logger.Log("Winget upgrade check:\n" + output, LogLevel.Info);
+                Logger.Log("Winget upgrade check:\n" + output, LogLevel.Info, new Font("Cascadia Mono", 8.25f));
 
                 return output.ToLower().Contains("available");
             }

@@ -27,7 +27,9 @@ public static class IniStateManager
             lines.Add("[APP]");
             lines.Add($"Width={form.Width}");
             lines.Add($"Height={form.Height}");
-            lines.Add(""); // empty line for spacing
+            lines.Add($"Top={form.Top}");
+            lines.Add($"Left={form.Left}");
+            //  lines.Add(""); // empty line for spacing
 
             // Append new FEATURES section (TreeView nodes states)
             lines.Add("[FEATURES]");
@@ -62,8 +64,75 @@ public static class IniStateManager
         }
     }
 
-    // Loads global states (App size, TreeView nodes states) from the INI file
-    public static void Load(TreeView tree, Form form)
+    // Loads the global states (App size, TreeView nodes states) if enabled
+    public static void LoadFeaturesIfEnabled(TreeView tree)
+    {
+        if (IsViewSettingEnabled("SETTINGS", "checkSaveToINI"))
+            LoadFeatureStates(tree);
+    }
+
+    public static void ApplyWindowState(Form form)
+    {
+        if (File.Exists(IniPath))
+        {
+            // Load window size and position from INI file
+            LoadWindowState(form);
+            form.StartPosition = FormStartPosition.Manual;
+        }
+        else
+        {
+            // If INI file doesn't exist, set default position
+            form.StartPosition = FormStartPosition.CenterScreen;
+        }
+    }
+
+    // Loads only the window size and position from the INI file
+    public static void LoadWindowState(Form form)
+    {
+        if (!File.Exists(IniPath)) return;
+
+        var lines = File.ReadAllLines(IniPath);
+        var section = "";
+
+        foreach (var line in lines)
+        {
+            var trimmed = line.Trim();
+            if (string.IsNullOrWhiteSpace(trimmed)) continue;
+
+            // Check if line is a section header
+            if (trimmed.StartsWith("[") && trimmed.EndsWith("]"))
+            {
+                section = trimmed;
+                continue;
+            }
+
+            if (section == "[APP]")
+            {
+                // Split line into key and value
+                var parts = trimmed.Split(new[] { '=' }, 2);
+                if (parts.Length != 2) continue;
+
+                var key = parts[0].Trim();
+                var value = parts[1].Trim();
+
+                // Parse and apply window size and position
+                if (int.TryParse(value, out int size))
+                {
+                    if (key.Equals("Width", StringComparison.OrdinalIgnoreCase))
+                        form.Width = size;
+                    else if (key.Equals("Height", StringComparison.OrdinalIgnoreCase))
+                        form.Height = size;
+                    else if (key.Equals("Top", StringComparison.OrdinalIgnoreCase))
+                        form.Top = size;
+                    else if (key.Equals("Left", StringComparison.OrdinalIgnoreCase))
+                        form.Left = size;
+                }
+            }
+        }
+    }
+
+    // Loads only the feature states (TreeView node checked states) from the INI file
+    public static void LoadFeatureStates(TreeView tree)
     {
         if (!File.Exists(IniPath)) return;
 
@@ -76,37 +145,28 @@ public static class IniStateManager
             var trimmed = line.Trim();
             if (string.IsNullOrWhiteSpace(trimmed)) continue;
 
-            // Check if line is a section
+            // Check if line is a section header
             if (trimmed.StartsWith("[") && trimmed.EndsWith("]"))
             {
                 section = trimmed;
                 continue;
             }
 
-            // Split line into key and value
-            var parts = trimmed.Split(new[] { '=' }, 2);
-            if (parts.Length != 2) continue;
-
-            var key = parts[0].Trim();
-            var value = parts[1].Trim();
-
             if (section == "[FEATURES]")
             {
+                // Split line into key and value
+                var parts = trimmed.Split(new[] { '=' }, 2);
+                if (parts.Length != 2) continue;
+
+                var key = parts[0].Trim();
+                var value = parts[1].Trim();
+
+                // Save checked state for each feature node
                 states[key] = value.ToLower() == "true";
-            }
-            else if (section == "[APP]")
-            {
-                if (int.TryParse(value, out int size))
-                {
-                    if (key.Equals("Width", StringComparison.OrdinalIgnoreCase))
-                        form.Width = size;
-                    else if (key.Equals("Height", StringComparison.OrdinalIgnoreCase))
-                        form.Height = size;
-                }
             }
         }
 
-        // Apply saved feature states to tree nodes
+        // Apply saved feature states to the TreeView nodes recursively
         ApplyStates(tree.Nodes, states);
     }
 

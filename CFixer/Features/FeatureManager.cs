@@ -1,5 +1,6 @@
 ﻿using Features;
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -16,12 +17,14 @@ namespace CrapFixer
 
         // Public properties to access the analysis results
         public static int TotalChecked => totalChecked;
+
         public static int IssuesFound => issuesFound;
 
         public static void ResetAnalysis()
         {
             totalChecked = 0;
             issuesFound = 0;
+            Logger.Clear();
         }
 
         /// <summary>
@@ -29,6 +32,9 @@ namespace CrapFixer
         /// </summary>
         public static void LoadFeatures(TreeView tree)
         {
+            // Hide the TreeView to avoid flickering and visible scroll jump
+            tree.Visible = false;
+
             var features = FeatureLoader.Load();
             tree.Nodes.Clear();
 
@@ -43,6 +49,14 @@ namespace CrapFixer
             }
 
             tree.ExpandAll(); // expand all nodes
+
+            // Set scroll to top and make TreeView visible
+            tree.BeginInvoke(new Action(() =>
+            {
+                // Ensure the first node is shown at the top (prevents auto-scroll to bottom)
+                if (tree.Nodes.Count > 0) tree.TopNode = tree.Nodes[0];
+                tree.Visible = true;
+            }));
         }
 
         /// <summary>
@@ -166,52 +180,75 @@ namespace CrapFixer
                     RestoreChecked(child);
             }
         }
-
-
         /// <summary>
-        /// Analyzes a selected feature and logs its status.
+        /// Analyzes a selected feature or, if it's a category, analyzes only checked child features.
         /// </summary>
         public static async void AnalyzeFeature(TreeNode node)
         {
-            // no && node.Checked 
+            // Analyze this node if it's a leaf node (not a category)
             if (node.Tag is FeatureNode fn && !fn.IsCategory && fn.Feature != null)
             {
                 bool isOk = await fn.Feature.CheckFeature();
                 node.ForeColor = isOk ? Color.Gray : Color.Red;
 
-                Logger.Log(isOk
-                    ? $"✅ Feature: {fn.Name} is properly configured."
-                    : $"❌ Feature: {fn.Name} requires attention.\n   ➤ {fn.Feature.GetFeatureDetails()}",
-                    isOk ? LogLevel.Info : LogLevel.Warning);
-
-                if (!isOk)
+                if (isOk)
+                {
+                    Logger.Log($"✅ Feature: {fn.Name} is properly configured.", LogLevel.Info);
+                }
+                else
+                {
+                    string category = node.Parent?.Text ?? "General";
+                    Logger.Log($"❌ Feature: {fn.Name} requires attention.", LogLevel.Warning);
+                    Logger.Log($"   ➤ {fn.Feature.GetFeatureDetails()}");
                     Logger.Log(new string('-', 50), LogLevel.Info);
+                }
+            }
+            else
+            {
+                // If it's a category node, analyze only checked child nodes
+                foreach (TreeNode child in node.Nodes)
+                {
+                    if (child.Checked)
+                        AnalyzeFeature(child);
+                }
             }
         }
 
 
         /// <summary>
-        /// Attempts to fix the selected feature and logs the result.
+        /// Attempts to fix the selected feature or, if it is a category, fixes only checked child features.
         /// </summary>
         public static async Task FixFeature(TreeNode node)
         {
-            // no && node.Checked 
+            // Try to fix this node if it is NOT a category (i.e., a leaf node)
             if (node.Tag is FeatureNode fn && !fn.IsCategory && fn.Feature != null)
             {
+                // Always fix the selected leaf node, regardless of Checked
                 bool result = await fn.Feature.DoFeature();
                 Logger.Log(result
                     ? $"🔧 {fn.Name} - Fixed"
                     : $"❌ {fn.Name} - ⚠️ Fix failed (This feature may require admin privileges)",
                     result ? LogLevel.Info : LogLevel.Error);
             }
+            else
+            {
+                // If it's a category node, fix only checked child nodes (recursively)
+                foreach (TreeNode child in node.Nodes)
+                {
+                    if (child.Checked)
+                        await FixFeature(child);
+                }
+            }
         }
 
+
         /// <summary>
-        /// Restores the selected feature to its original state and logs the result.
+        /// Restores a selected feature (always) or, if it's a category, only restores checked child features.
+        /// Logs success or failure.
         /// </summary>
         public static void RestoreFeature(TreeNode node)
         {
-            // no && node.Checked 
+            // Restore feature node regardless of Checked state
             if (node.Tag is FeatureNode fn && !fn.IsCategory && fn.Feature != null)
             {
                 bool ok = fn.Feature.UndoFeature();
@@ -220,38 +257,26 @@ namespace CrapFixer
                     : $"❌ {fn.Name} - Restore failed",
                     ok ? LogLevel.Info : LogLevel.Error);
             }
-        }
-
-        /// <summary>
-        /// Recursively previews changes for all checked features.
-        /// </summary>
-        /// <param name="node"></param>
-        public static void PreviewChanges(TreeNode node)
-        {
-            if (node.Tag is FeatureNode fn)
+            else
             {
-                if (!fn.IsCategory && fn.Feature != null)
-                {
-                    string details = fn.Feature.GetFeatureDetails();
-
-                    string category = node.Parent?.Text ?? "General";
-                    Logger.Log($"🛈 [PREVIEW] [{category}] {fn.Name}", LogLevel.Info);
-                    Logger.Log($"   ➤ {details}");
-                    Logger.Log(new string('-', 50), LogLevel.Info);
-                }
-
+                // For category nodes, only restore checked children
                 foreach (TreeNode child in node.Nodes)
-                    PreviewChanges(child);
+                {
+                    if (child.Checked)
+                        RestoreFeature(child);
+                }
             }
         }
 
 
         /// <summary>
-        /// Displays help information for the selected feature.
+        /// Displays help information for the selected feature or plugin.
+        /// If a feature is selected, also offers to search online.
         /// </summary>
         public static void ShowHelp(TreeNode node)
         {
-            if (node.Tag is FeatureNode fn && fn.Feature != null)
+            // Show help for features
+            if (node?.Tag is FeatureNode fn && fn.Feature != null)
             {
                 string info = fn.Feature.Info();
                 MessageBox.Show(
@@ -259,27 +284,36 @@ namespace CrapFixer
                     $"Help: {fn.Name}",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
+
+                // Optional online help
+                var result = MessageBox.Show(
+                    "Would you like to search online for more information about this feature?",
+                    "Online Help",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+
+                if (result == DialogResult.Yes)
+                {
+                    string searchQuery = Uri.EscapeDataString(fn.Feature.GetFeatureDetails());
+                    string webUrl = $"https://www.google.com/search?q={searchQuery}";
+                    System.Diagnostics.Process.Start(new ProcessStartInfo
+                    {
+                        FileName = webUrl,
+                        UseShellExecute = true
+                    });
+                }
+
+                return;
             }
-            else
+
+            // Show help for plugins
+            if (!PluginManager.ShowHelp(node))
             {
-                MessageBox.Show("⚠️ No feature selected or feature is invalid.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("⚠️ No feature or plugin selected, or help info unavailable.",
+                    "Help",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
             }
         }
-
-        /// <summary>
-        /// Opens the default web browser to search for help online for the selected feature (Extended ShowHelp).
-        /// </summary>
-        /// <param name="node"></param>
-        public static void ShowHelpOnline(TreeNode node)
-        {
-            if (node?.Tag is FeatureNode fn)
-            {
-                string searchQuery = Uri.EscapeDataString( fn.Feature.GetFeatureDetails());
-                string webUrl = $"microsoft-edge:https://www.google.com/search?q={searchQuery}";
-
-                System.Diagnostics.Process.Start(webUrl);
-            }
-        }
-
     }
 }

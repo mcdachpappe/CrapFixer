@@ -29,5 +29,10 @@ namespace CFixer.Views
         {
             subNavigation.SwitchView(new PluginsView());
         }
+
+        private void btnViveMenu_Click(object sender, EventArgs e)
+        {
+            subNavigation.SwitchView(new ViveView());
+        }
     }
 }

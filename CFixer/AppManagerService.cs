@@ -9,7 +9,6 @@ using Windows.Management.Deployment;
 
 namespace CrapFixer
 {
-
     public class AppAnalysisResult
     {
         public string AppName { get; set; }
@@ -43,13 +42,18 @@ namespace CrapFixer
         }
 
         /// <summary>
-        /// Analyzes the apps based on predefined apps (from resources) and logs the results in MainForm.
+        /// Analyzes the installed apps against provided bloatware patterns and whitelist,
+        /// logs the results, and returns the matches.
         /// </summary>
-        /// <param name="predefinedApps"></param>
-        /// <returns></returns>
-        public async Task<List<AppAnalysisResult>> AnalyzeAndLogAppsAsync(string[] predefinedApps)
+        /// <param name="bloatwarePatterns">List of bloatware keywords to check against</param>
+        /// <param name="whitelistPatterns">List of app names to ignore</param>
+        /// <param name="scanAll">If true, scans all apps regardless of bloatware patterns</param>
+        public async Task<List<AppAnalysisResult>> AnalyzeAndLogAppsAsync(
+            string[] bloatwarePatterns,
+            string[] whitelistPatterns,
+            bool scanAll)
         {
-            var apps = await AnalyzeAppsAsync(predefinedApps);
+            var apps = await AnalyzeAppsAsync(bloatwarePatterns, whitelistPatterns, scanAll);
 
             if (apps.Count > 0)
             {
@@ -64,37 +68,56 @@ namespace CrapFixer
                 Logger.Log("✅ No Microsoft Store bloatware apps found.", LogLevel.Info);
             }
 
+            Logger.Log(""); // Add a blank line for spacing
+
             return apps;
         }
-
 
         /// <summary>
         /// Analyzes the apps based on predefined apps (from resources) and returns matching apps.
         /// </summary>
         /// <param name="predefinedApps"></param>
         /// <returns></returns>
-        public async Task<List<AppAnalysisResult>> AnalyzeAppsAsync(string[] predefinedApps)
+        public async Task<List<AppAnalysisResult>> AnalyzeAppsAsync(string[] bloatwarePatterns, string[] whitelistPatterns, bool scanAll = false)
         {
             Logger.Log("\n🧩 APPS ANALYSIS", LogLevel.Info);
             Logger.Log(new string('=', 50), LogLevel.Info);
 
-            await LoadAppsAsync(); // Load all apps before analysis
+            await LoadAppsAsync(); // Load all installed apps
 
             var result = new List<AppAnalysisResult>();
 
-            // Check each app's name against predefined patterns
             foreach (var app in _appDirectory)
             {
-                foreach (string pattern in predefinedApps)
+                string appName = app.Key.ToLower();
+
+                // Always skip whitelisted apps
+                if (whitelistPatterns.Any(w => appName.Contains(w)))
+                    continue;
+
+                if (scanAll)
                 {
-                    if (app.Key.ToLower().Contains(pattern.ToLower()))
+                    // If wildcard is set, include everything not whitelisted
+                    result.Add(new AppAnalysisResult
                     {
-                        result.Add(new AppAnalysisResult
+                        AppName = app.Key,
+                        FullName = app.Value
+                    });
+                }
+                else
+                {
+                    // Only match against provided patterns
+                    foreach (var pattern in bloatwarePatterns)
+                    {
+                        if (appName.Contains(pattern))
                         {
-                            AppName = app.Key,
-                            FullName = app.Value // Store the full name
-                        });
-                        break;
+                            result.Add(new AppAnalysisResult
+                            {
+                                AppName = app.Key,
+                                FullName = app.Value
+                            });
+                            break;
+                        }
                     }
                 }
             }
@@ -171,39 +194,71 @@ namespace CrapFixer
             return removedApps; // Return removed apps to update the UI
         }
 
+
         /// <summary>
-        /// Loads an external bloatware list from the CFEnhancer text file (comma-separated).
-        /// Falls back to an empty array if the file doesn't exist or fails to load.
+        /// Loads external bloatware and whitelist patterns from a text file (e.g., CFEnhancer.txt).
+        /// Also checks if wildcard (*) is set to scan all apps.
         /// </summary>
-        public string[] LoadExternalBloatwareList(string fileName = "CFEnhancer.txt")
+        /// <param name="fileName">Name of the file to load from (must be in Plugins folder)</param>
+        /// <returns>
+        /// A tuple containing:
+        /// - bloatwarePatterns: List of apps to flag as bloatware
+        /// - whitelistPatterns: List of apps to ignore/exclude from detection
+        /// - scanAll: Whether all apps should be shown regardless of matching patterns
+        /// </returns>
+        public (string[] bloatwarePatterns, string[] whitelistPatterns, bool scanAll) LoadExternalBloatwarePatterns(string fileName = "CFEnhancer.txt")
         {
             try
             {
                 string exeDir = AppDomain.CurrentDomain.BaseDirectory;
-                string pluginsDir = Path.Combine(exeDir, "plugins"); 
-                string fullPath = Path.Combine(pluginsDir, fileName);
+                string fullPath = Path.Combine(exeDir, "Plugins", fileName);
 
                 if (!File.Exists(fullPath))
                 {
-                    Logger.Log($"⚠️ The bloatware radar stays basic for now 🧠. Get the CFEnhancer detection list from Options > Plugins ", LogLevel.Warning);
-                    return Array.Empty<string>();
+                    Logger.Log($"⚠️ The bloatware radar stays basic for now 🧠. Get the enhanced detection list from Options > Plugins > CFEnhancer plugin", LogLevel.Warning);
+                    return (Array.Empty<string>(), Array.Empty<string>(), false);
                 }
 
-                var content = File.ReadAllText(fullPath);
-                return content.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                              .Select(s => s.Trim())
-                              .ToArray();
+                var lines = File.ReadAllLines(fullPath);
+                var bloatware = new List<string>();  // Apps to detect as bloatware
+                var whitelist = new List<string>();  // Apps to ignore completely
+                bool scanAll = false;               // Set to true if wildcard (*) is present
+
+                foreach (var line in lines)
+                {
+                    // Strip comments after "#" and trim whitespace
+                    var entry = line.Split('#')[0].Trim();
+
+                    // Skip empty lines or lines with only comments
+                    if (string.IsNullOrWhiteSpace(entry))
+                        continue;
+
+                    // Wildcard entry means: show all installed apps
+                    if (entry == "*" || entry == "*.*")
+                    {
+                        scanAll = true;
+                        continue;
+                    }
+
+                    // Entries starting with "!" go to the whitelist (excluded apps)
+                    if (entry.StartsWith("!"))
+                        whitelist.Add(entry.Substring(1).Trim().ToLower());
+                    else
+                        bloatware.Add(entry.ToLower());  // All other entries are bloatware patterns
+                }
+
+                return (bloatware.ToArray(), whitelist.ToArray(), scanAll);
             }
             catch (Exception ex)
             {
                 Logger.Log($"Error reading external bloatware file: {ex.Message}", LogLevel.Warning);
-                return Array.Empty<string>();
+                return (Array.Empty<string>(), Array.Empty<string>(), false);
             }
         }
 
 
         /// <summary>
-        /// OPTIONALLY!Returns all installed apps in the system. 
+        /// OPTIONALLY!Returns all installed apps in the system.
         /// </summary>
         /// <returns></returns>
         public async Task<List<AppAnalysisResult>> GetAllInstalledAppsAsync()

@@ -29,7 +29,6 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.panelContainer = new System.Windows.Forms.Panel();
             this.panelContent = new System.Windows.Forms.Panel();
             this.btnAnalyze = new System.Windows.Forms.Button();
@@ -38,10 +37,9 @@
             this.treeFeatures = new System.Windows.Forms.TreeView();
             this.contextMenuStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.analyzeMarkedFeatureToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.previewMarkedFeatureToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.fixMarkedFeatureToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.seperatorToolStripMenuItem = new System.Windows.Forms.ToolStripSeparator();
             this.restoreMarkedFeatureToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.seperatorToolStripMenuItem = new System.Windows.Forms.ToolStripSeparator();
             this.helpMarkedFeatureToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.Apps = new System.Windows.Forms.TabPage();
             this.checkedListBoxApps = new System.Windows.Forms.CheckedListBox();
@@ -50,15 +48,17 @@
             this.rtbLogger = new System.Windows.Forms.RichTextBox();
             this.btnFix = new System.Windows.Forms.Button();
             this.panelHeader = new System.Windows.Forms.Panel();
+            this.btnGitHub = new System.Windows.Forms.Button();
             this.lblOSInfo = new System.Windows.Forms.Label();
             this.lblVersionInfo = new System.Windows.Forms.Label();
             this.lblHeader = new System.Windows.Forms.Label();
             this.pictureHeader = new System.Windows.Forms.PictureBox();
             this.btnRestore = new System.Windows.Forms.Button();
             this.linkUpdateCheck = new System.Windows.Forms.LinkLabel();
-            this.btnSettings = new System.Windows.Forms.Button();
-            this.btnHome = new System.Windows.Forms.Button();
+            this.btnTools = new System.Windows.Forms.Button();
+            this.btnFixer = new System.Windows.Forms.Button();
             this.linkSelection = new System.Windows.Forms.LinkLabel();
+            this.toolTip = new System.Windows.Forms.ToolTip(this.components);
             this.panelContainer.SuspendLayout();
             this.panelContent.SuspendLayout();
             this.tabControl.SuspendLayout();
@@ -77,15 +77,15 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.panelContainer.BackColor = System.Drawing.SystemColors.Control;
             this.panelContainer.Controls.Add(this.panelContent);
-            this.panelContainer.Location = new System.Drawing.Point(99, 62);
+            this.panelContainer.Location = new System.Drawing.Point(90, 69);
             this.panelContainer.Name = "panelContainer";
-            this.panelContainer.Size = new System.Drawing.Size(611, 382);
+            this.panelContainer.Size = new System.Drawing.Size(613, 375);
             this.panelContainer.TabIndex = 198;
             // 
             // panelContent
             // 
             this.panelContent.AutoScroll = true;
-            this.panelContent.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(252)))), ((int)(((byte)(252)))), ((int)(((byte)(252)))));
+            this.panelContent.BackColor = System.Drawing.Color.White;
             this.panelContent.Controls.Add(this.btnAnalyze);
             this.panelContent.Controls.Add(this.tabControl);
             this.panelContent.Controls.Add(this.groupBox);
@@ -93,7 +93,7 @@
             this.panelContent.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panelContent.Location = new System.Drawing.Point(0, 0);
             this.panelContent.Name = "panelContent";
-            this.panelContent.Size = new System.Drawing.Size(611, 382);
+            this.panelContent.Size = new System.Drawing.Size(613, 375);
             this.panelContent.TabIndex = 205;
             // 
             // btnAnalyze
@@ -102,7 +102,7 @@
             this.btnAnalyze.AutoEllipsis = true;
             this.btnAnalyze.FlatStyle = System.Windows.Forms.FlatStyle.System;
             this.btnAnalyze.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnAnalyze.Location = new System.Drawing.Point(280, 346);
+            this.btnAnalyze.Location = new System.Drawing.Point(268, 339);
             this.btnAnalyze.Name = "btnAnalyze";
             this.btnAnalyze.Size = new System.Drawing.Size(121, 29);
             this.btnAnalyze.TabIndex = 1;
@@ -116,45 +116,42 @@
             | System.Windows.Forms.AnchorStyles.Left)));
             this.tabControl.Controls.Add(this.Windows);
             this.tabControl.Controls.Add(this.Apps);
-            this.tabControl.HotTrack = true;
-            this.tabControl.Location = new System.Drawing.Point(0, 0);
+            this.tabControl.ItemSize = new System.Drawing.Size(68, 21);
+            this.tabControl.Location = new System.Drawing.Point(7, 5);
             this.tabControl.Name = "tabControl";
-            this.tabControl.Padding = new System.Drawing.Point(20, 8);
             this.tabControl.SelectedIndex = 0;
             this.tabControl.ShowToolTips = true;
-            this.tabControl.Size = new System.Drawing.Size(270, 376);
-            this.tabControl.SizeMode = System.Windows.Forms.TabSizeMode.Fixed;
+            this.tabControl.Size = new System.Drawing.Size(255, 363);
+            this.tabControl.SizeMode = System.Windows.Forms.TabSizeMode.FillToRight;
             this.tabControl.TabIndex = 199;
             // 
             // Windows
             // 
+            this.Windows.AutoScroll = true;
             this.Windows.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(240)))), ((int)(((byte)(240)))));
             this.Windows.Controls.Add(this.treeFeatures);
-            this.Windows.Location = new System.Drawing.Point(4, 32);
+            this.Windows.Location = new System.Drawing.Point(4, 25);
             this.Windows.Name = "Windows";
-            this.Windows.Padding = new System.Windows.Forms.Padding(3);
-            this.Windows.Size = new System.Drawing.Size(262, 340);
+            this.Windows.Size = new System.Drawing.Size(247, 334);
             this.Windows.TabIndex = 0;
             this.Windows.Text = "Windows";
             // 
             // treeFeatures
             // 
-            this.treeFeatures.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(242)))), ((int)(((byte)(242)))), ((int)(((byte)(242)))));
+            this.treeFeatures.BackColor = System.Drawing.Color.White;
             this.treeFeatures.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.treeFeatures.CheckBoxes = true;
             this.treeFeatures.ContextMenuStrip = this.contextMenuStrip;
             this.treeFeatures.Dock = System.Windows.Forms.DockStyle.Fill;
             this.treeFeatures.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.treeFeatures.Indent = 20;
-            this.treeFeatures.ItemHeight = 23;
-            this.treeFeatures.Location = new System.Drawing.Point(3, 3);
+            this.treeFeatures.Location = new System.Drawing.Point(0, 0);
             this.treeFeatures.Name = "treeFeatures";
             this.treeFeatures.ShowLines = false;
             this.treeFeatures.ShowNodeToolTips = true;
             this.treeFeatures.ShowPlusMinus = false;
             this.treeFeatures.ShowRootLines = false;
-            this.treeFeatures.Size = new System.Drawing.Size(256, 334);
-            this.treeFeatures.TabIndex = 196;
+            this.treeFeatures.Size = new System.Drawing.Size(247, 334);
+            this.treeFeatures.TabIndex = 0;
             this.treeFeatures.AfterCheck += new System.Windows.Forms.TreeViewEventHandler(this.treeFeatures_AfterCheck);
             this.treeFeatures.MouseDown += new System.Windows.Forms.MouseEventHandler(this.treeFeatures_MouseDown);
             // 
@@ -162,14 +159,13 @@
             // 
             this.contextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.analyzeMarkedFeatureToolStripMenuItem,
-            this.previewMarkedFeatureToolStripMenuItem,
             this.fixMarkedFeatureToolStripMenuItem,
-            this.seperatorToolStripMenuItem,
             this.restoreMarkedFeatureToolStripMenuItem,
+            this.seperatorToolStripMenuItem,
             this.helpMarkedFeatureToolStripMenuItem});
             this.contextMenuStrip.Name = "contextManualMenu";
             this.contextMenuStrip.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
-            this.contextMenuStrip.Size = new System.Drawing.Size(119, 120);
+            this.contextMenuStrip.Size = new System.Drawing.Size(119, 98);
             // 
             // analyzeMarkedFeatureToolStripMenuItem
             // 
@@ -178,13 +174,6 @@
             this.analyzeMarkedFeatureToolStripMenuItem.Text = "Analyze";
             this.analyzeMarkedFeatureToolStripMenuItem.Click += new System.EventHandler(this.analyzeMarkedFeatureToolStripMenuItem_Click);
             // 
-            // previewMarkedFeatureToolStripMenuItem
-            // 
-            this.previewMarkedFeatureToolStripMenuItem.Name = "previewMarkedFeatureToolStripMenuItem";
-            this.previewMarkedFeatureToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
-            this.previewMarkedFeatureToolStripMenuItem.Text = "Preview";
-            this.previewMarkedFeatureToolStripMenuItem.Click += new System.EventHandler(this.previewMarkedFeatureToolStripMenuItem_Click);
-            // 
             // fixMarkedFeatureToolStripMenuItem
             // 
             this.fixMarkedFeatureToolStripMenuItem.Name = "fixMarkedFeatureToolStripMenuItem";
@@ -192,17 +181,17 @@
             this.fixMarkedFeatureToolStripMenuItem.Text = "Fix";
             this.fixMarkedFeatureToolStripMenuItem.Click += new System.EventHandler(this.fixMarkedFeatureToolStripMenuItem_Click);
             // 
-            // seperatorToolStripMenuItem
-            // 
-            this.seperatorToolStripMenuItem.Name = "seperatorToolStripMenuItem";
-            this.seperatorToolStripMenuItem.Size = new System.Drawing.Size(115, 6);
-            // 
             // restoreMarkedFeatureToolStripMenuItem
             // 
             this.restoreMarkedFeatureToolStripMenuItem.Name = "restoreMarkedFeatureToolStripMenuItem";
             this.restoreMarkedFeatureToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
             this.restoreMarkedFeatureToolStripMenuItem.Text = "Restore";
             this.restoreMarkedFeatureToolStripMenuItem.Click += new System.EventHandler(this.restoreMarkedFeatureToolStripMenuItem_Click);
+            // 
+            // seperatorToolStripMenuItem
+            // 
+            this.seperatorToolStripMenuItem.Name = "seperatorToolStripMenuItem";
+            this.seperatorToolStripMenuItem.Size = new System.Drawing.Size(115, 6);
             // 
             // helpMarkedFeatureToolStripMenuItem
             // 
@@ -214,30 +203,28 @@
             // 
             // Apps
             // 
-            this.Apps.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(242)))), ((int)(((byte)(242)))), ((int)(((byte)(242)))));
+            this.Apps.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(240)))), ((int)(((byte)(240)))));
             this.Apps.Controls.Add(this.checkedListBoxApps);
-            this.Apps.Location = new System.Drawing.Point(4, 32);
+            this.Apps.Location = new System.Drawing.Point(4, 25);
             this.Apps.Name = "Apps";
-            this.Apps.Padding = new System.Windows.Forms.Padding(3);
-            this.Apps.Size = new System.Drawing.Size(262, 340);
+            this.Apps.Size = new System.Drawing.Size(247, 334);
             this.Apps.TabIndex = 1;
-            this.Apps.Text = "Apps";
+            this.Apps.Text = "Applications";
             // 
             // checkedListBoxApps
             // 
-            this.checkedListBoxApps.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(242)))), ((int)(((byte)(242)))), ((int)(((byte)(242)))));
+            this.checkedListBoxApps.BackColor = System.Drawing.Color.White;
             this.checkedListBoxApps.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.checkedListBoxApps.Dock = System.Windows.Forms.DockStyle.Fill;
             this.checkedListBoxApps.Font = new System.Drawing.Font("Tahoma", 8F);
             this.checkedListBoxApps.FormattingEnabled = true;
             this.checkedListBoxApps.Items.AddRange(new object[] {
             "No analysis yet"});
-            this.checkedListBoxApps.Location = new System.Drawing.Point(3, 3);
+            this.checkedListBoxApps.Location = new System.Drawing.Point(0, 0);
             this.checkedListBoxApps.Name = "checkedListBoxApps";
-            this.checkedListBoxApps.Size = new System.Drawing.Size(256, 334);
+            this.checkedListBoxApps.Size = new System.Drawing.Size(247, 334);
             this.checkedListBoxApps.Sorted = true;
             this.checkedListBoxApps.TabIndex = 336;
-            this.checkedListBoxApps.ThreeDCheckBoxes = true;
             // 
             // groupBox
             // 
@@ -247,9 +234,10 @@
             this.groupBox.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(252)))), ((int)(((byte)(252)))), ((int)(((byte)(252)))));
             this.groupBox.Controls.Add(this.comboLogActions);
             this.groupBox.Controls.Add(this.rtbLogger);
-            this.groupBox.Location = new System.Drawing.Point(280, 21);
+            this.groupBox.ForeColor = System.Drawing.SystemColors.ControlDarkDark;
+            this.groupBox.Location = new System.Drawing.Point(268, 21);
             this.groupBox.Name = "groupBox";
-            this.groupBox.Size = new System.Drawing.Size(320, 317);
+            this.groupBox.Size = new System.Drawing.Size(334, 310);
             this.groupBox.TabIndex = 200;
             this.groupBox.TabStop = false;
             // 
@@ -257,13 +245,14 @@
             // 
             this.comboLogActions.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.comboLogActions.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(240)))), ((int)(((byte)(240)))));
             this.comboLogActions.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboLogActions.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.comboLogActions.Font = new System.Drawing.Font("Tahoma", 8.25F);
             this.comboLogActions.FormattingEnabled = true;
-            this.comboLogActions.Location = new System.Drawing.Point(7, 292);
+            this.comboLogActions.Location = new System.Drawing.Point(7, 285);
             this.comboLogActions.Name = "comboLogActions";
-            this.comboLogActions.Size = new System.Drawing.Size(305, 21);
+            this.comboLogActions.Size = new System.Drawing.Size(319, 21);
             this.comboLogActions.TabIndex = 210;
             this.comboLogActions.Visible = false;
             // 
@@ -274,13 +263,13 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.rtbLogger.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(252)))), ((int)(((byte)(252)))), ((int)(((byte)(252)))));
             this.rtbLogger.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.rtbLogger.Font = new System.Drawing.Font("Consolas", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.rtbLogger.Location = new System.Drawing.Point(7, 12);
+            this.rtbLogger.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.rtbLogger.Location = new System.Drawing.Point(7, 19);
             this.rtbLogger.Name = "rtbLogger";
-            this.rtbLogger.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.rtbLogger.Size = new System.Drawing.Size(305, 273);
+            this.rtbLogger.Size = new System.Drawing.Size(319, 263);
             this.rtbLogger.TabIndex = 195;
             this.rtbLogger.Text = "";
+            this.rtbLogger.WordWrap = false;
             // 
             // btnFix
             // 
@@ -288,7 +277,7 @@
             this.btnFix.AutoEllipsis = true;
             this.btnFix.FlatStyle = System.Windows.Forms.FlatStyle.System;
             this.btnFix.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnFix.Location = new System.Drawing.Point(480, 346);
+            this.btnFix.Location = new System.Drawing.Point(482, 339);
             this.btnFix.Name = "btnFix";
             this.btnFix.Size = new System.Drawing.Size(121, 29);
             this.btnFix.TabIndex = 2;
@@ -299,6 +288,7 @@
             // panelHeader
             // 
             this.panelHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(77)))), ((int)(((byte)(77)))), ((int)(((byte)(77)))));
+            this.panelHeader.Controls.Add(this.btnGitHub);
             this.panelHeader.Controls.Add(this.lblOSInfo);
             this.panelHeader.Controls.Add(this.lblVersionInfo);
             this.panelHeader.Controls.Add(this.lblHeader);
@@ -310,21 +300,42 @@
             this.panelHeader.TabIndex = 204;
             this.panelHeader.Paint += new System.Windows.Forms.PaintEventHandler(this.panelHeader_Paint);
             // 
+            // btnGitHub
+            // 
+            this.btnGitHub.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnGitHub.AutoSize = true;
+            this.btnGitHub.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnGitHub.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(120)))), ((int)(((byte)(170)))), ((int)(((byte)(210)))));
+            this.btnGitHub.FlatAppearance.BorderSize = 0;
+            this.btnGitHub.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnGitHub.Font = new System.Drawing.Font("Tahoma", 8F);
+            this.btnGitHub.ForeColor = System.Drawing.Color.Gainsboro;
+            this.btnGitHub.Location = new System.Drawing.Point(657, 7);
+            this.btnGitHub.Name = "btnGitHub";
+            this.btnGitHub.Size = new System.Drawing.Size(40, 40);
+            this.btnGitHub.TabIndex = 201;
+            this.btnGitHub.TabStop = false;
+            this.toolTip.SetToolTip(this.btnGitHub, "Love CrapFixer? It’s open source — but your support keeps it alive! 💖");
+            this.btnGitHub.UseVisualStyleBackColor = true;
+            this.btnGitHub.Click += new System.EventHandler(this.btnGitHub_Click);
+            // 
             // lblOSInfo
             // 
             this.lblOSInfo.AutoSize = true;
-            this.lblOSInfo.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F);
+            this.lblOSInfo.BackColor = System.Drawing.Color.Transparent;
+            this.lblOSInfo.Font = new System.Drawing.Font("Tahoma", 7.6F);
             this.lblOSInfo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(230)))), ((int)(((byte)(230)))));
             this.lblOSInfo.Location = new System.Drawing.Point(90, 37);
             this.lblOSInfo.Name = "lblOSInfo";
-            this.lblOSInfo.Size = new System.Drawing.Size(116, 13);
+            this.lblOSInfo.Size = new System.Drawing.Size(120, 13);
             this.lblOSInfo.TabIndex = 200;
             this.lblOSInfo.Text = "Checking your system..";
             // 
             // lblVersionInfo
             // 
             this.lblVersionInfo.AutoSize = true;
-            this.lblVersionInfo.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.5F);
+            this.lblVersionInfo.BackColor = System.Drawing.Color.Transparent;
+            this.lblVersionInfo.Font = new System.Drawing.Font("Tahoma", 7.6F);
             this.lblVersionInfo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(230)))), ((int)(((byte)(230)))));
             this.lblVersionInfo.Location = new System.Drawing.Point(198, 15);
             this.lblVersionInfo.Name = "lblVersionInfo";
@@ -335,6 +346,8 @@
             // lblHeader
             // 
             this.lblHeader.AutoEllipsis = true;
+            this.lblHeader.BackColor = System.Drawing.Color.Transparent;
+            this.lblHeader.Cursor = System.Windows.Forms.Cursors.Hand;
             this.lblHeader.Font = new System.Drawing.Font("Tahoma", 14F, System.Drawing.FontStyle.Bold);
             this.lblHeader.ForeColor = System.Drawing.Color.White;
             this.lblHeader.Location = new System.Drawing.Point(89, 9);
@@ -342,29 +355,35 @@
             this.lblHeader.Size = new System.Drawing.Size(117, 25);
             this.lblHeader.TabIndex = 1;
             this.lblHeader.Text = "CrapFixer";
+            this.toolTip.SetToolTip(this.lblHeader, "Click here to visit the CrapFixer website at github.com/builtbybel/crapfixer");
             this.lblHeader.UseCompatibleTextRendering = true;
             // 
             // pictureHeader
             // 
-            this.pictureHeader.Image = ((System.Drawing.Image)(resources.GetObject("pictureHeader.Image")));
+            this.pictureHeader.BackColor = System.Drawing.Color.Transparent;
+            this.pictureHeader.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.pictureHeader.Image = global::CFixer.Properties.Resources.AppIcon;
+            this.pictureHeader.InitialImage = null;
             this.pictureHeader.Location = new System.Drawing.Point(30, 9);
             this.pictureHeader.Name = "pictureHeader";
             this.pictureHeader.Size = new System.Drawing.Size(44, 41);
             this.pictureHeader.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pictureHeader.TabIndex = 0;
             this.pictureHeader.TabStop = false;
+            this.toolTip.SetToolTip(this.pictureHeader, "Click here to visit the CrapFixer website at github.com/builtbybel/crapfixer");
             // 
             // btnRestore
             // 
             this.btnRestore.AutoEllipsis = true;
-            this.btnRestore.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnRestore.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(114)))), ((int)(((byte)(114)))), ((int)(((byte)(114)))));
+            this.btnRestore.Cursor = System.Windows.Forms.Cursors.Default;
+            this.btnRestore.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(120)))), ((int)(((byte)(170)))), ((int)(((byte)(210)))));
+            this.btnRestore.FlatAppearance.BorderSize = 0;
             this.btnRestore.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnRestore.Font = new System.Drawing.Font("Tahoma", 8.25F);
-            this.btnRestore.ForeColor = System.Drawing.Color.White;
-            this.btnRestore.Location = new System.Drawing.Point(0, 129);
+            this.btnRestore.Font = new System.Drawing.Font("Tahoma", 8F);
+            this.btnRestore.ForeColor = System.Drawing.Color.Gainsboro;
+            this.btnRestore.Location = new System.Drawing.Point(10, 142);
             this.btnRestore.Name = "btnRestore";
-            this.btnRestore.Size = new System.Drawing.Size(99, 69);
+            this.btnRestore.Size = new System.Drawing.Size(80, 60);
             this.btnRestore.TabIndex = 198;
             this.btnRestore.TabStop = false;
             this.btnRestore.Text = "&Restore";
@@ -379,46 +398,48 @@
             this.linkUpdateCheck.AutoSize = true;
             this.linkUpdateCheck.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.linkUpdateCheck.LinkColor = System.Drawing.Color.White;
-            this.linkUpdateCheck.Location = new System.Drawing.Point(595, 447);
+            this.linkUpdateCheck.Location = new System.Drawing.Point(590, 447);
             this.linkUpdateCheck.Name = "linkUpdateCheck";
-            this.linkUpdateCheck.Size = new System.Drawing.Size(95, 13);
+            this.linkUpdateCheck.Size = new System.Drawing.Size(107, 13);
             this.linkUpdateCheck.TabIndex = 203;
             this.linkUpdateCheck.TabStop = true;
-            this.linkUpdateCheck.Text = "Check for updates";
-            this.linkUpdateCheck.TextAlign = System.Drawing.ContentAlignment.TopCenter;  
+            this.linkUpdateCheck.Text = "Check for updates...";
+            this.linkUpdateCheck.TextAlign = System.Drawing.ContentAlignment.TopCenter;
+            this.linkUpdateCheck.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkUpdateCheck_LinkClicked);
             // 
-            // btnSettings
+            // btnTools
             // 
-            this.btnSettings.AutoEllipsis = true;
-            this.btnSettings.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnSettings.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(114)))), ((int)(((byte)(114)))), ((int)(((byte)(114)))));
-            this.btnSettings.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnSettings.Font = new System.Drawing.Font("Tahoma", 8.25F);
-            this.btnSettings.ForeColor = System.Drawing.Color.White;
-            this.btnSettings.Location = new System.Drawing.Point(0, 197);
-            this.btnSettings.Name = "btnSettings";
-            this.btnSettings.Size = new System.Drawing.Size(99, 69);
-            this.btnSettings.TabIndex = 205;
-            this.btnSettings.TabStop = false;
-            this.btnSettings.Text = "&Options";
-            this.btnSettings.UseVisualStyleBackColor = true;
+            this.btnTools.AutoEllipsis = true;
+            this.btnTools.Cursor = System.Windows.Forms.Cursors.Default;
+            this.btnTools.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(120)))), ((int)(((byte)(170)))), ((int)(((byte)(210)))));
+            this.btnTools.FlatAppearance.BorderSize = 0;
+            this.btnTools.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnTools.Font = new System.Drawing.Font("Tahoma", 8F);
+            this.btnTools.ForeColor = System.Drawing.Color.Gainsboro;
+            this.btnTools.Location = new System.Drawing.Point(10, 210);
+            this.btnTools.Name = "btnTools";
+            this.btnTools.Size = new System.Drawing.Size(80, 60);
+            this.btnTools.TabIndex = 205;
+            this.btnTools.TabStop = false;
+            this.btnTools.Text = "&Tools";
+            this.btnTools.UseVisualStyleBackColor = true;
             // 
-            // btnHome
+            // btnFixer
             // 
-            this.btnHome.AutoEllipsis = true;
-            this.btnHome.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(76)))), ((int)(((byte)(145)))), ((int)(((byte)(235)))));
-            this.btnHome.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnHome.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(66)))), ((int)(((byte)(131)))), ((int)(((byte)(222)))));
-            this.btnHome.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnHome.Font = new System.Drawing.Font("Tahoma", 8.25F);
-            this.btnHome.ForeColor = System.Drawing.Color.White;
-            this.btnHome.Location = new System.Drawing.Point(0, 61);
-            this.btnHome.Name = "btnHome";
-            this.btnHome.Size = new System.Drawing.Size(99, 69);
-            this.btnHome.TabIndex = 206;
-            this.btnHome.TabStop = false;
-            this.btnHome.Text = "&Fixer";
-            this.btnHome.UseVisualStyleBackColor = false;
+            this.btnFixer.AutoEllipsis = true;
+            this.btnFixer.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(150)))), ((int)(((byte)(200)))), ((int)(((byte)(240)))));
+            this.btnFixer.Cursor = System.Windows.Forms.Cursors.Default;
+            this.btnFixer.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(120)))), ((int)(((byte)(170)))), ((int)(((byte)(210)))));
+            this.btnFixer.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnFixer.Font = new System.Drawing.Font("Tahoma", 8F);
+            this.btnFixer.ForeColor = System.Drawing.Color.Gainsboro;
+            this.btnFixer.Location = new System.Drawing.Point(10, 74);
+            this.btnFixer.Name = "btnFixer";
+            this.btnFixer.Size = new System.Drawing.Size(80, 60);
+            this.btnFixer.TabIndex = 206;
+            this.btnFixer.TabStop = false;
+            this.btnFixer.Text = "&Fixer";
+            this.btnFixer.UseVisualStyleBackColor = false;
             // 
             // linkSelection
             // 
@@ -441,15 +462,17 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(104)))), ((int)(((byte)(104)))), ((int)(((byte)(104)))));
+            this.AutoScroll = true;
+            this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(103)))), ((int)(((byte)(103)))), ((int)(((byte)(103)))));
             this.ClientSize = new System.Drawing.Size(710, 466);
             this.Controls.Add(this.linkSelection);
-            this.Controls.Add(this.btnHome);
-            this.Controls.Add(this.btnSettings);
+            this.Controls.Add(this.btnFixer);
+            this.Controls.Add(this.btnTools);
             this.Controls.Add(this.panelHeader);
             this.Controls.Add(this.btnRestore);
             this.Controls.Add(this.linkUpdateCheck);
             this.Controls.Add(this.panelContainer);
+            this.MinimumSize = new System.Drawing.Size(642, 337);
             this.Name = "MainForm";
             this.ShowIcon = false;
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Show;
@@ -495,13 +518,14 @@
         private System.Windows.Forms.Panel panelContent;
         private System.Windows.Forms.LinkLabel linkUpdateCheck;
         private System.Windows.Forms.ToolStripMenuItem helpMarkedFeatureToolStripMenuItem;
-        private System.Windows.Forms.TreeView treeFeatures;
         private System.Windows.Forms.Label lblOSInfo;
-        private System.Windows.Forms.Button btnSettings;
-        private System.Windows.Forms.Button btnHome;
+        private System.Windows.Forms.Button btnTools;
+        private System.Windows.Forms.Button btnFixer;
         private System.Windows.Forms.LinkLabel linkSelection;
-        private System.Windows.Forms.ToolStripMenuItem previewMarkedFeatureToolStripMenuItem;
         private System.Windows.Forms.ComboBox comboLogActions;
+        private System.Windows.Forms.TreeView treeFeatures;
+        private System.Windows.Forms.Button btnGitHub;
+        private System.Windows.Forms.ToolTip toolTip;
     }
 }
 
