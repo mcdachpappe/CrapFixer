@@ -31,31 +31,29 @@
             this.checkSaveToINI = new System.Windows.Forms.CheckBox();
             this.checkBox2 = new System.Windows.Forms.CheckBox();
             this.button1 = new System.Windows.Forms.Button();
+            this.checkInstallIcons = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // checkSaveToINI
             // 
             this.checkSaveToINI.AutoSize = true;
-            this.checkSaveToINI.Checked = true;
-            this.checkSaveToINI.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.checkSaveToINI.Location = new System.Drawing.Point(15, 44);
+            this.checkSaveToINI.Location = new System.Drawing.Point(15, 48);
             this.checkSaveToINI.Name = "checkSaveToINI";
-            this.checkSaveToINI.Size = new System.Drawing.Size(135, 17);
+            this.checkSaveToINI.Size = new System.Drawing.Size(148, 17);
             this.checkSaveToINI.TabIndex = 0;
-            this.checkSaveToINI.Text = "Save settings to INI file";
+            this.checkSaveToINI.Text = "Save all settings to INI file";
             this.checkSaveToINI.UseVisualStyleBackColor = true;
             // 
             // checkBox2
             // 
-            this.checkBox2.AutoSize = true;
             this.checkBox2.Checked = true;
             this.checkBox2.CheckState = System.Windows.Forms.CheckState.Checked;
             this.checkBox2.Enabled = false;
-            this.checkBox2.Location = new System.Drawing.Point(15, 67);
+            this.checkBox2.Location = new System.Drawing.Point(15, 71);
             this.checkBox2.Name = "checkBox2";
-            this.checkBox2.Size = new System.Drawing.Size(211, 17);
+            this.checkBox2.Size = new System.Drawing.Size(236, 35);
             this.checkBox2.TabIndex = 1;
-            this.checkBox2.Text = "Activate Plugins for PowerShell Tooling";
+            this.checkBox2.Text = "Activate Plugins for PowerShell Tooling (Super Plugins)";
             this.checkBox2.UseVisualStyleBackColor = true;
             // 
             // button1
@@ -74,11 +72,23 @@
             this.button1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             this.button1.UseVisualStyleBackColor = false;
             // 
+            // checkInstallIcons
+            // 
+            this.checkInstallIcons.AutoSize = true;
+            this.checkInstallIcons.Location = new System.Drawing.Point(15, 112);
+            this.checkInstallIcons.Name = "checkInstallIcons";
+            this.checkInstallIcons.Size = new System.Drawing.Size(265, 17);
+            this.checkInstallIcons.TabIndex = 4;
+            this.checkInstallIcons.Text = "Download optional icons to enhance navigation UI";
+            this.checkInstallIcons.UseVisualStyleBackColor = true;
+            this.checkInstallIcons.CheckedChanged += new System.EventHandler(this.checkInstallIcons_CheckedChanged);
+            // 
             // SettingsView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            this.BackColor = System.Drawing.Color.White;
+            this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(251)))), ((int)(((byte)(251)))), ((int)(((byte)(251)))));
+            this.Controls.Add(this.checkInstallIcons);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.checkBox2);
             this.Controls.Add(this.checkSaveToINI);
@@ -95,5 +105,6 @@
         private System.Windows.Forms.CheckBox checkSaveToINI;
         private System.Windows.Forms.CheckBox checkBox2;
         private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.CheckBox checkInstallIcons;
     }
 }

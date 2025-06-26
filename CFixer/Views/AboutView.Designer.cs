@@ -35,6 +35,8 @@
             this.linkGitHub = new System.Windows.Forms.LinkLabel();
             this.btnDonate = new System.Windows.Forms.Button();
             this.panelSettings = new System.Windows.Forms.Panel();
+            this.comboBoxCurrency = new System.Windows.Forms.ComboBox();
+            this.comboBoxAmount = new System.Windows.Forms.ComboBox();
             this.lblCopyright = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panelSettings.SuspendLayout();
@@ -58,7 +60,7 @@
             this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.label1.AutoEllipsis = true;
-            this.label1.Location = new System.Drawing.Point(19, 138);
+            this.label1.Location = new System.Drawing.Point(15, 127);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(589, 26);
             this.label1.TabIndex = 236;
@@ -88,12 +90,12 @@
             // linkGitHub
             // 
             this.linkGitHub.AutoSize = true;
-            this.linkGitHub.Location = new System.Drawing.Point(38, 173);
+            this.linkGitHub.Location = new System.Drawing.Point(34, 162);
             this.linkGitHub.Name = "linkGitHub";
-            this.linkGitHub.Size = new System.Drawing.Size(193, 13);
+            this.linkGitHub.Size = new System.Drawing.Size(189, 13);
             this.linkGitHub.TabIndex = 239;
             this.linkGitHub.TabStop = true;
-            this.linkGitHub.Text = "https://github.com/builtbybel/CrapFixer";
+            this.linkGitHub.Text = "https://github.com/builtbybel/crapfixer";
             this.linkGitHub.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkGitHub_LinkClicked);
             // 
             // btnDonate
@@ -104,16 +106,19 @@
             this.btnDonate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnDonate.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnDonate.ForeColor = System.Drawing.Color.White;
-            this.btnDonate.Location = new System.Drawing.Point(61, 85);
+            this.btnDonate.Location = new System.Drawing.Point(226, 91);
             this.btnDonate.Name = "btnDonate";
-            this.btnDonate.Size = new System.Drawing.Size(207, 39);
+            this.btnDonate.Size = new System.Drawing.Size(101, 22);
             this.btnDonate.TabIndex = 240;
-            this.btnDonate.Text = "Like CrapFixer? Support future updates on Ko-fi or PayPal";
+            this.btnDonate.Text = "Donate";
             this.btnDonate.UseVisualStyleBackColor = false;
             this.btnDonate.Click += new System.EventHandler(this.btnDonate_Click);
             // 
             // panelSettings
             // 
+            this.panelSettings.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(251)))), ((int)(((byte)(251)))), ((int)(((byte)(251)))));
+            this.panelSettings.Controls.Add(this.comboBoxCurrency);
+            this.panelSettings.Controls.Add(this.comboBoxAmount);
             this.panelSettings.Controls.Add(this.lblCopyright);
             this.panelSettings.Controls.Add(this.btnDonate);
             this.panelSettings.Controls.Add(this.lblHeader);
@@ -126,6 +131,26 @@
             this.panelSettings.Name = "panelSettings";
             this.panelSettings.Size = new System.Drawing.Size(625, 395);
             this.panelSettings.TabIndex = 242;
+            // 
+            // comboBoxCurrency
+            // 
+            this.comboBoxCurrency.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxCurrency.Font = new System.Drawing.Font("Tahoma", 9.25F);
+            this.comboBoxCurrency.FormattingEnabled = true;
+            this.comboBoxCurrency.Location = new System.Drawing.Point(157, 91);
+            this.comboBoxCurrency.Name = "comboBoxCurrency";
+            this.comboBoxCurrency.Size = new System.Drawing.Size(63, 22);
+            this.comboBoxCurrency.TabIndex = 243;
+            // 
+            // comboBoxAmount
+            // 
+            this.comboBoxAmount.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxAmount.Font = new System.Drawing.Font("Tahoma", 9.25F);
+            this.comboBoxAmount.FormattingEnabled = true;
+            this.comboBoxAmount.Location = new System.Drawing.Point(64, 91);
+            this.comboBoxAmount.Name = "comboBoxAmount";
+            this.comboBoxAmount.Size = new System.Drawing.Size(90, 22);
+            this.comboBoxAmount.TabIndex = 242;
             // 
             // lblCopyright
             // 
@@ -163,5 +188,7 @@
         private System.Windows.Forms.Button btnDonate;
         private System.Windows.Forms.Panel panelSettings;
         private System.Windows.Forms.Label lblCopyright;
+        private System.Windows.Forms.ComboBox comboBoxAmount;
+        private System.Windows.Forms.ComboBox comboBoxCurrency;
     }
 }

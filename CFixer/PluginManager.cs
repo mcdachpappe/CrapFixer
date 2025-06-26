@@ -1,13 +1,20 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Drawing;
 
+/// <summary>
+/// Provides functionality to load, execute, analyze, and fix external PowerShell-based plugins.
+/// </summary>
+///
 public static class PluginManager
 {
+    /// 1. Execute a PowerShell script asynchronously and log output/errors.
     public static async Task ExecutePlugin(string pluginPath)
     {
         try
@@ -20,9 +27,6 @@ public static class PluginManager
                 process.StartInfo.RedirectStandardError = true;
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.CreateNoWindow = true;
-
-                var outputBuilder = new StringBuilder();
-                var errorBuilder = new StringBuilder();
 
                 process.OutputDataReceived += (s, e) =>
                 {
@@ -50,6 +54,7 @@ public static class PluginManager
         }
     }
 
+    /// 2. Load all .ps1 plugin files from the 'plugins' folder into a TreeView.
     public static void LoadPlugins(TreeView treeView)
     {
         string pluginsFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins");
@@ -57,13 +62,11 @@ public static class PluginManager
         if (!Directory.Exists(pluginsFolder))
         {
             Directory.CreateDirectory(pluginsFolder);
-            // Logger.Log("No Plugins found.\nGet it on https://github.com/builtbybel/CrapFixer");
             return;
         }
 
         var pluginsNode = new TreeNode("Plugins")
         {
-           // NodeFont = new Font(treeView.Font, FontStyle.Bold),
             BackColor = Color.Magenta,
             ForeColor = Color.White
         };
@@ -73,7 +76,7 @@ public static class PluginManager
             var scriptName = Path.GetFileNameWithoutExtension(scriptPath);
             var scriptNode = new TreeNode
             {
-                Text = $"{scriptName} [PS]",
+                Text = $"{scriptName}", // [PS]
                 ToolTipText = scriptPath,
                 Tag = scriptPath,
                 Checked = false
@@ -82,117 +85,313 @@ public static class PluginManager
         }
 
         treeView.Nodes.Add(pluginsNode);
-        treeView.ExpandAll(); // expand all nodes
+        treeView.ExpandAll();
     }
 
-    public static void AnalyzeAll(TreeNode node)
+    /// 3. Parse the [Commands] section from plugin content.
+    private static Dictionary<string, string> ParseCommands(string pluginContent)
     {
-        if (node.Tag is string path && node.Checked)
-        {
-            Logger.Log($"🔎 Plugin ready: {Path.GetFileName(path)}");
-        }
-
-        foreach (TreeNode child in node.Nodes)
-            AnalyzeAll(child);
+        return ParseSection(pluginContent, "Commands");
     }
 
-    /// <summary>
-    /// Executes all checked plugins in the tree view.
-    /// </summary>
-    /// <param name="node"></param>
-    /// <returns></returns>
-    public static async Task FixChecked(TreeNode node)
+    /// 4. Parse the [Expect] section from plugin content.
+    private static Dictionary<string, string> ParseExpect(string pluginContent)
     {
-        if (node.Checked)
+        return ParseSection(pluginContent, "Expect");
+    }
+
+    /// 5. Generic parser for named sections like [Commands] or [Expect].
+    /// Lines must be in 'key = value' format.
+    private static Dictionary<string, string> ParseSection(string content, string sectionName)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var lines = content.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+        bool insideSection = false;
+        foreach (var line in lines)
         {
-            // Show a warning for each checked plugin
-            if (node.Tag is string pluginPath)  
+            var trimmed = line.Trim();
+            if (trimmed.Equals($"[{sectionName}]", StringComparison.OrdinalIgnoreCase))
             {
-                var pluginName = Path.GetFileName(pluginPath);  // get the plugin name
-                var proceed = ShowPluginWarning(pluginName);  // the warning message box
-                if (!proceed) return;  // If user chooses not to proceed, exit the method
+                insideSection = true;
+                continue;
+            }
+            // Exit the section when another section begins
+            if (insideSection)
+            {
+                if (trimmed.StartsWith("[") && trimmed.EndsWith("]"))
+                    break;
+
+                // Parse lines of form: key = value
+                var idx = trimmed.IndexOf('=');
+                if (idx > 0)
+                {
+                    var key = trimmed.Substring(0, idx).Trim();
+                    var val = trimmed.Substring(idx + 1).Trim();
+                    result[key] = val;
+                }
             }
         }
 
-        if (node.Tag is string path && node.Checked)
-        {
-            await ExecutePlugin(path);
-        }
+        return result;
+    }
 
-        // Recursively process all child nodes
-        foreach (TreeNode child in node.Nodes)
-            await FixChecked(child);
+    /// 6. Execute a shell command (CMD) and return exit code and output.
+    private static async Task<(int exitCode, string output)> ExecuteCommand(string command)
+    {
+        var process = new Process();
+        var outputBuilder = new StringBuilder();
+
+        process.StartInfo.FileName = "cmd.exe";
+        process.StartInfo.Arguments = $"/c \"{command}\"";
+        process.StartInfo.RedirectStandardOutput = true;
+        process.StartInfo.RedirectStandardError = true;
+        process.StartInfo.UseShellExecute = false;
+        process.StartInfo.CreateNoWindow = true;
+
+        process.OutputDataReceived += (s, e) => { if (e.Data != null) outputBuilder.AppendLine(e.Data); };
+        process.ErrorDataReceived += (s, e) => { if (e.Data != null) outputBuilder.AppendLine(e.Data); };
+
+        process.Start();
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+
+        await Task.Run(() => process.WaitForExit());
+
+        return (process.ExitCode, outputBuilder.ToString());
     }
 
     /// <summary>
-    /// Analyzes individual plugin files.
+    /// 7. Analyzes a single plugin node by running its 'Check' command
+    /// and comparing the output against expected values defined in the [Expect] section.
+    /// Logs a summary indicating success if all checks pass, or warnings if mismatches occur.
+    /// Only the specified plugin node is analyzed, regardless of its checked state.
     /// </summary>
-    /// <param name="node"></param>
-    /// <returns></returns>
+    /// <param name="node">The TreeNode representing the plugin to analyze, with script path stored in Tag.</param>
     public static async Task AnalyzePlugin(TreeNode node)
     {
-        if (node?.Tag is string path && File.Exists(path))
+        if (node == null || node.Tag == null || !File.Exists(node.Tag.ToString()))
         {
-            string content = File.ReadAllText(path);
-            Logger.Log(new string('=', 50), LogLevel.Custom);
-            Logger.Log($"📄 Script content:{node.Text}\n{content}", LogLevel.Info);
-
-            await Task.CompletedTask;
+           // Logger.Log($"❌ Script file not found for plugin: {node?.Text}", LogLevel.Error);
+            Logger.Log(new string('-', 50), LogLevel.Info);
         }
         else
         {
-            Logger.Log($"❌ Script file not found for plugin: {node?.Text}", LogLevel.Error);
+            string pluginName = node.Text;
+            string path = node.Tag.ToString();
+            string content = File.ReadAllText(path);
+
+            Dictionary<string, string> commands = ParseCommands(content);
+            Dictionary<string, string> expected = ParseExpect(content);
+
+            if (!commands.ContainsKey("Check"))
+            {
+                Logger.Log($"🔎 Plugin ready: [PS] {Path.GetFileName(path)}");
+                Logger.Log(new string('-', 50), LogLevel.Info);
+            }
+            else
+            {
+                string checkCmd = commands["Check"];
+                var result = await ExecuteCommand(checkCmd);
+                string output = result.Item2;
+
+                bool allMatched = true;
+                StringBuilder mismatchDetails = new StringBuilder();
+
+                foreach (var entry in expected)
+                {
+                    string key = entry.Key;
+                    string expectedVal = entry.Value;
+
+                    var match = Regex.Match(output, $@"{Regex.Escape(key)}\s+REG_\w+\s+(\S+)", RegexOptions.IgnoreCase);
+
+                    if (match.Success)
+                    {
+                        string actual = match.Groups[1].Value;
+
+                        if (!expectedVal.Equals(actual, StringComparison.OrdinalIgnoreCase))
+                        {
+                            allMatched = false;
+                            mismatchDetails.AppendLine($"   ➤ {key}: expected '{expectedVal}', found '{actual}'");
+                        }
+                    }
+                    else
+                    {
+                        allMatched = false;
+                        mismatchDetails.AppendLine(
+                            $"   ➤ Warning: The registry key '{key}' could not be located in the output. " +
+                            "This usually means the key is missing and the tweak will have to add it. " +
+                            "[InternalCode: Could not be parsed from output]");
+                    }
+                }
+
+                if (allMatched)
+                {
+                    Logger.Log($"✅ Plugin: {pluginName} is properly configured.", LogLevel.Info);
+                    node.ForeColor = Color.Gray;
+                }
+                else
+                {
+                    Logger.Log($"❌ Plugin: {pluginName} requires attention.\n{mismatchDetails}", LogLevel.Warning);
+                    node.ForeColor = Color.Red;
+                }
+
+                Logger.Log(new string('-', 50), LogLevel.Info);
+            }
         }
     }
 
     /// <summary>
-    /// Executes individual plugin files.
+    /// 8. Applies the fix to a single plugin node.
+    /// This method processes only the specified node regardless of its checked state.
+    /// It attempts to run the "Do" command from the plugin script, or falls back to executing the entire script.
     /// </summary>
-    /// <param name="node"></param>
-    /// <returns></returns>
     public static async Task FixPlugin(TreeNode node)
     {
         if (node?.Tag is string path && File.Exists(path))
         {
-            Logger.Log($"🔧 Executing Plugin: {node.Text}", LogLevel.Info);
-            await ExecutePlugin(path);
-        }
-        else
-        {
-            Logger.Log($"❌ Script file not found for plugin: {node?.Text}", LogLevel.Error);
-        }
-    }
+            var content = File.ReadAllText(path);
+            var commands = ParseCommands(content);
 
-    public static void RestorePlugin(TreeNode node)
-    {
-        Logger.Log($"⚠️ Restore is not available for Plugins: {node?.Text}", LogLevel.Warning);
-        MessageBox.Show("Restore is not possible for Plugins.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+            if (commands.TryGetValue("Do", out string doCmd))
+            {
+                Logger.Log($"🔧 Running Do command for plugin: {node.Text}");
+                var (exitCode, output) = await ExecuteCommand(doCmd);
+                Logger.Log($"Do Output:\n{output}");
+
+                Logger.Log(exitCode == 0 ? "✅ Fix applied successfully." : "❌ Fix failed.");
+            }
+            else
+            {
+                Logger.Log($"🔧 No Do command found, executing full script.");
+                await ExecutePlugin(path);
+            }
+        }
     }
 
     /// <summary>
-    /// Checks if the node is a plugin node.
+    /// 9. Reverts changes for a single plugin node.
     /// </summary>
-    /// <param name="node"></param>
-    /// <returns></returns>
+    public static async Task RestorePlugin(TreeNode node)
+    {
+        if (node?.Tag is string path && File.Exists(path))
+        {
+            var content = File.ReadAllText(path);
+            var commands = ParseCommands(content);
+
+            if (commands.TryGetValue("Undo", out string undoCmd))
+            {
+                Logger.Log($"♻️ Running Undo command for plugin: {node.Text}");
+                var (exitCode, output) = await ExecuteCommand(undoCmd);
+                Logger.Log($"Undo Output:\n{output}");
+
+                Logger.Log(exitCode == 0 ? "✅ Restore successful." : "❌ Restore failed.");
+            }
+            else
+            {
+                Logger.Log($"⚠️ No Undo command found. Restore not possible.");
+                MessageBox.Show("Restore is not possible for this plugin.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+    }
+
+    /// 10. Recursively analyze all checked plugin nodes.
+    public static async Task AnalyzeAll(TreeNode node)
+    {
+        if (node.Checked && node.Tag is string path && File.Exists(path))
+            await AnalyzePlugin(node);
+
+        foreach (TreeNode child in node.Nodes)
+            await AnalyzeAll(child);
+    }
+
+    public static async Task AnalyzeAllPlugins(TreeNodeCollection nodes)
+    {
+        Logger.Log("\n🔌 PLUGIN ANALYSIS", LogLevel.Info);
+        Logger.Log(new string('=', 50), LogLevel.Info);
+
+        foreach (TreeNode node in nodes)
+            await AnalyzeAll(node);
+    }
+
+    /// 11. Recursively apply fixes for all checked plugin nodes.
+    public static async Task FixChecked(TreeNode node)
+    {
+        if (node.Checked && node.Tag is string pluginPath)
+        {
+            var pluginName = Path.GetFileName(pluginPath);
+            var proceed = ShowPluginWarning(pluginName);
+            if (!proceed) return;
+            await FixPlugin(node);
+        }
+
+        foreach (TreeNode child in node.Nodes)
+            await FixChecked(child);
+    }
+
+    /// 12. Return true if the node represents a PowerShell plugin file.
     public static bool IsPluginNode(TreeNode node)
     {
         return node?.Tag is string path && path.EndsWith(".ps1", StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>
-    /// Shows a warning message box when the root plugin node is checked.
-    /// </summary>
-    /// <returns>True if the user confirmed, otherwise false.</returns>
+    /// 13. Show a warning before executing external plugin code.
     public static bool ShowPluginWarning(string pluginName)
     {
         var result = MessageBox.Show(
-             $"⚠️ WARNING: The plugin '{pluginName}' is an external script. Its execution is outside this apps responsibility and at your own risk.\n" +
-             "Proceed only if you trust the source of this plugin. Do you want to continue?",
-             "Plugin Activation Warning",
-             MessageBoxButtons.YesNo,
-             MessageBoxIcon.Warning
-         );
+            $"⚠️ WARNING: The plugin '{pluginName}' is an external script. Its execution is outside this app's responsibility and at your own risk.\n" +
+            "Proceed only if you trust the source of this plugin. Do you want to continue?",
+            "Plugin Activation Warning",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning
+        );
 
-        return result == DialogResult.Yes; // Return true if "Yes" was clicked
+        return result == DialogResult.Yes;
+    }
+
+    public static bool ShowHelp(TreeNode node)
+    {
+        string info = GetPluginHelpInfo(node);
+        if (!string.IsNullOrEmpty(info))
+        {
+            MessageBox.Show(info, $"Plugin Help: {node.Text}", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Returns the help/info string from the plugin commands section for the given node.
+    /// Assumes node.Tag contains the script path as string.
+    /// </summary>
+    public static string GetPluginHelpInfo(TreeNode node)
+    {
+        if (node?.Tag is string path && File.Exists(path))
+        {
+            string content = File.ReadAllText(path);
+            // Simple parsing to find line starting with "Info=" under [Commands]
+            bool inCommandsSection = false;
+            foreach (var line in content.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var trimmed = line.Trim();
+
+                if (trimmed.StartsWith("[Commands]", StringComparison.OrdinalIgnoreCase))
+                {
+                    inCommandsSection = true;
+                    continue;
+                }
+                if (trimmed.StartsWith("[") && trimmed.EndsWith("]") && inCommandsSection)
+                {
+                    // Left commands section
+                    break;
+                }
+                if (inCommandsSection && trimmed.StartsWith("Info=", StringComparison.OrdinalIgnoreCase))
+                {
+                    return trimmed.Substring(5).Trim(); // Return the text after "Info="
+                }
+            }
+        }
+
+        return null; // No info found or invalid node
     }
 }

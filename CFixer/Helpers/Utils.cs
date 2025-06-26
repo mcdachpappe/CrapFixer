@@ -3,52 +3,62 @@ using System;
 using System.Diagnostics;
 using System.Windows.Forms;
 
-// This file is part of CFixer.
 namespace CrapFixer
 {
-    internal class Utils
+    internal static class Utils
     {
+        private const string GitHubUrl = "https://github.com/builtbybel/CrapFixer";
+
         /// <summary>
-        /// Checks if a registry value is equal to a specified integer.
+        /// Checks if a registry value equals a specified integer.
         /// </summary>
-        /// <param name="keyName"></param>
-        /// <param name="valueName"></param>
-        /// <param name="expectedValue"></param>
-        /// <returns></returns>
         public static bool IntEquals(string keyName, string valueName, int expectedValue)
         {
             try
             {
-                var value = Registry.GetValue(keyName, valueName, null);
-                return (value != null && (int)value == expectedValue);
+                object value = Registry.GetValue(keyName, valueName, null);
+                return value is int intValue && intValue == expectedValue;
             }
             catch (Exception ex)
-
             {
-                MessageBox.Show(keyName, ex.Message, MessageBoxButtons.OK);
+                Logger.Log($"Registry check failed for {keyName}\\{valueName}: {ex.Message}", LogLevel.Error);
                 return false;
             }
         }
 
         /// <summary>
-        /// Checks if a registry value is equal to a specified string.
+        /// Checks if a registry value equals a specified string.
         /// </summary>
-        /// <param name="keyName"></param>
-        /// <param name="valueName"></param>
-        /// <param name="expectedValue"></param>
-        /// <returns></returns>
         public static bool StringEquals(string keyName, string valueName, string expectedValue)
         {
             try
             {
-                var value = Registry.GetValue(keyName, valueName, null);
-
-                return (value != null && (string)value == expectedValue);
+                object value = Registry.GetValue(keyName, valueName, null);
+                return value is string strValue && strValue == expectedValue;
             }
             catch (Exception ex)
             {
-                MessageBox.Show(keyName, ex.Message, MessageBoxButtons.OK);
+                Logger.Log($"Registry check failed for {keyName}\\{valueName}: {ex.Message}", LogLevel.Error);
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Opens the GitHub project page in the default browser.
+        /// </summary>
+        public static void OpenGitHubPage(object sender, EventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = GitHubUrl,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Failed to open GitHub page: {ex.Message}", LogLevel.Error);
             }
         }
 
@@ -61,21 +71,18 @@ namespace CrapFixer
             {
                 Logger.Log("Restarting Windows Explorer to apply UI changes...", LogLevel.Info);
 
-                // Kill all explorer instances
                 foreach (var process in Process.GetProcessesByName("explorer"))
                 {
                     process.Kill();
                     process.WaitForExit();
                 }
 
-                // Restart explorer
                 Process.Start("explorer.exe");
-
-                Logger.Log("Explorer restarted successfully. Changes should now be visible.", LogLevel.Info);
+                Logger.Log("Explorer restarted successfully.", LogLevel.Info);
             }
             catch (Exception ex)
             {
-                Logger.Log("Failed to restart Explorer: " + ex.Message, LogLevel.Error);
+                Logger.Log($"Failed to restart Explorer: {ex.Message}", LogLevel.Error);
             }
         }
     }

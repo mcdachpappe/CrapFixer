@@ -1,5 +1,4 @@
 ﻿using CrapFixer;
-using CFixer.Views;
 using System;
 using System.Diagnostics;
 using System.Windows.Forms;
@@ -19,6 +18,19 @@ namespace Views
         {
             // Update version label
             this.lblVersionInfo.Text = $"v{Program.GetAppVersion()} ";
+
+            // Populate amount choices
+            comboBoxAmount.Items.AddRange(new object[] { "3.50", "5", "10",
+                                                          "12", "15", "16",
+                                                          "17", "18","20",
+                                                          "25", "30", "35",
+                                                          "40", "50", "60",
+                                                          "70", "80", "100"});
+            comboBoxAmount.SelectedIndex = 2;
+
+            // Populate currency options
+            comboBoxCurrency.Items.AddRange(new object[] { "EUR", "USD", "GBP", "CAD", "AUD", "CHF" });
+            comboBoxCurrency.SelectedIndex = 0;
         }
 
         private void linkGitHub_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -28,37 +40,34 @@ namespace Views
 
         private void btnDonate_Click(object sender, EventArgs e)
         {
-            var result = MessageBox.Show(
-                "Hi! I'm building CrapFixer solo. Want to support me and help launch Version 1.0?",
-                "Support CrapFixer ❤️",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Information);
+            string amount = comboBoxAmount.SelectedItem?.ToString();
+            string currency = comboBoxCurrency.SelectedItem?.ToString();
 
-            if (result == DialogResult.Yes)
+            if (string.IsNullOrEmpty(amount) || string.IsNullOrEmpty(currency))
             {
-                var donationChoice = MessageBox.Show(
-                    "Would you like to donate via PayPal? (Click No for Ko-fi)",
-                    "Choose Your Support Method",
-                    MessageBoxButtons.YesNoCancel,
-                    MessageBoxIcon.Question);
-
-                if (donationChoice == DialogResult.Yes)
-                {
-                    System.Diagnostics.Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "https://www.paypal.com/donate/?hosted_button_id=M9DW4VNKH9ECQ",
-                        UseShellExecute = true
-                    });
-                }
-                else if (donationChoice == DialogResult.No)
-                {
-                    System.Diagnostics.Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "https://ko-fi.com/builtbybel",
-                        UseShellExecute = true
-                    });
-                }
+                MessageBox.Show("Please select an amount and a currency.");
+                return;
             }
+
+            string email = "belim@builtbybel.com";
+            string purpose = Uri.EscapeDataString("Support Development of the CrapFixer app.");
+
+            string returnUrl = Uri.EscapeDataString("https://github.com/Belim/support");
+            string cancelUrl = Uri.EscapeDataString("https://github.com/builtbybel/CrapFixer");
+
+            string url = $"https://www.paypal.com/cgi-bin/webscr?cmd=_donations" +
+                         $"&business={Uri.EscapeDataString(email)}" +
+                         $"&amount={amount}" +
+                         $"&currency_code={currency}" +
+                         $"&item_name={purpose}" +
+                         $"&return={returnUrl}" +
+                         $"&cancel_return={cancelUrl}";
+
+            System.Diagnostics.Process.Start(new ProcessStartInfo
+            {
+                FileName = url,
+                UseShellExecute = true
+            });
         }
     }
 }

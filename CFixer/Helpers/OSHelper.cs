@@ -1,9 +1,9 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.ObjectModel;
 using System.Management.Automation;
 using System.Threading.Tasks;
 using Microsoft.Win32;
 
-// This file is part of CFixer. 
 namespace OSHelper
 {
     internal class OSHelper
@@ -14,37 +14,63 @@ namespace OSHelper
             {
                 try
                 {
-                    using (PowerShell powerShellInstance = PowerShell.Create())
+                    using (PowerShell ps = PowerShell.Create())
                     {
-                        powerShellInstance.AddScript("Get-CimInstance -ClassName Win32_OperatingSystem");
-                        Collection<PSObject> psOutput = powerShellInstance.Invoke();
+                        ps.AddScript("Get-CimInstance -ClassName Win32_OperatingSystem");
+                        var results = ps.Invoke();
 
-                        foreach (PSObject outputItem in psOutput)
+                        foreach (var result in results)
                         {
-                            if (outputItem != null)
-                            {
-                                string productName = outputItem.Properties["Caption"]?.Value?.ToString();
-                                if (!string.IsNullOrEmpty(productName))
-                                {
-                                    string osVersion = productName.Contains("Windows 10") ? "Windows 10" : "Windows 11";
+                            if (result == null) continue;
 
-                                    using (RegistryKey displayVersionKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion"))
+                            string caption = result.Properties["Caption"]?.Value?.ToString();
+                            string version = result.Properties["Version"]?.Value?.ToString();
+                            string build = result.Properties["BuildNumber"]?.Value?.ToString();
+
+                            string displayVersion = Registry.GetValue(
+                                @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion",
+                                "DisplayVersion", "")?.ToString();
+
+                            // UBR = Update Build Revision
+                            string ubr = Registry.GetValue(
+                                @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion",
+                                "UBR", 0)?.ToString();
+
+                            bool isInsider = false;
+                            string ring = null;
+
+                            using (var insiderKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\UpdateOrchestrator"))
+                            {
+                                if (insiderKey != null)
+                                {
+                                    object enabled = insiderKey.GetValue("EnableInsiderBuilds");
+                                    if (enabled != null && Convert.ToInt32(enabled) == 1)
                                     {
-                                        if (displayVersionKey != null)
-                                        {
-                                            string displayVersion = displayVersionKey.GetValue("DisplayVersion")?.ToString();
-                                            return $"{osVersion} ({displayVersion})";
-                                        }
+                                        isInsider = true;
+                                        ring = insiderKey.GetValue("Ring")?.ToString();
                                     }
-                                    return osVersion;
                                 }
                             }
+
+                            string osName = caption?.Contains("Windows 11") == true ? "Windows 11" :
+                                            caption?.Contains("Windows 10") == true ? "Windows 10" :
+                                            caption ?? "Unknown OS";
+
+                            string fullBuild = !string.IsNullOrEmpty(build) && !string.IsNullOrEmpty(ubr)
+                                ? $"{build}.{ubr}"
+                                : build ?? "unknown";
+
+                            string insiderInfo = isInsider ? $" (Insider: {ring})" : "";
+
+                            return $"{osName} {displayVersion}{insiderInfo} (Build {fullBuild})";
                         }
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    return $"OS info unavailable: {ex.Message}";
                 }
+
                 return "OS not supported";
             });
         }

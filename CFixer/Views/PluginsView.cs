@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -10,8 +11,10 @@ namespace CFixer.Views
 {
     public partial class PluginsView : UserControl
     {
-        private List<PluginEntry> plugins = new List<PluginEntry>();
-        private HashSet<string> installedPlugins = new HashSet<string>();
+        private List<PluginEntry> plugins = new List<PluginEntry>();        // All plugins from the manifest, so full squad
+        private List<PluginEntry> visiblePlugins = new List<PluginEntry>(); // Plugins currently shown in the UI (filtered or not)
+        private HashSet<string> installedPlugins = new HashSet<string>();   // Names of plugins already installed on disk
+
         private const string manifestUrl = "https://raw.githubusercontent.com/builtbybel/CrapFixer/main/plugins/plugins_manifest.txt";
 
         public class PluginEntry
@@ -31,6 +34,9 @@ namespace CFixer.Views
             await LoadPlugins();
         }
 
+        /// <summary>
+        /// Loads the currently installed plugins from disk into memory.
+        /// </summary>
         private void LoadInstalledPlugins()
         {
             var pluginPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins");
@@ -43,29 +49,28 @@ namespace CFixer.Views
             }
         }
 
+        /// <summary>
+        /// Loads plugins from the remote manifest and displays them.
+        /// </summary>
         private async Task LoadPlugins()
         {
             try
             {
-                LoadInstalledPlugins();
+                LoadInstalledPlugins(); // Load the plugins already installed on disk, gotta know whats up
 
-               
                 using (var client = new WebClient())
                 {
+                    // Download the plugin manifest
                     string content = await Task.Run(() => client.DownloadString(manifestUrl));
+
+                    // Parse the manifest into our plugins list — all the available plugins decoded!
                     plugins = ParseManifest(content);
 
-                    listBoxPlugins.Items.Clear();
-                    foreach (var plugin in plugins)
-                    {
-                        var fileName = Path.GetFileName(plugin.Url);
-                        string displayName = plugin.Name;
+                    // Sync visiblePlugins with the full list to keep UI and data in perfect harmony
+                    visiblePlugins = plugins.ToList();
 
-                        if (installedPlugins.Contains(fileName))
-                            displayName += " (Installed)";
-
-                        listBoxPlugins.Items.Add(displayName);
-                    }
+                    // Update the ListBox so it shows all the plugins we're tracking right now
+                    UpdateVisiblePlugins();
                 }
             }
             catch (Exception ex)
@@ -74,37 +79,61 @@ namespace CFixer.Views
             }
         }
 
+        /// <summary>
+        /// Parses the remote plugin manifest into a list of PluginEntry objects.
+        /// </summary>
         private List<PluginEntry> ParseManifest(string content)
         {
             var result = new List<PluginEntry>();
             var lines = content.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
             PluginEntry current = null;
+            string currentKey = null;
 
             foreach (var line in lines)
             {
-                if (line.StartsWith("[") && line.EndsWith("]"))
+                var trimmedLine = line.Trim();
+
+                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
                 {
                     if (current != null)
                         result.Add(current);
 
-                    var name = line.Substring(1, line.Length - 2).Trim();
+                    var name = trimmedLine.Substring(1, trimmedLine.Length - 2).Trim();
                     current = new PluginEntry { Name = name };
+                    currentKey = null;
                 }
-                else if (!string.IsNullOrWhiteSpace(line) && line.Contains("=") && current != null)
+                else if (!string.IsNullOrWhiteSpace(trimmedLine))
                 {
-                    var parts = line.Split(new[] { '=' }, 2);
-                    var key = parts[0].Trim();
-                    var value = parts[1].Trim();
-
-                    switch (key)
+                    if (trimmedLine.Contains("=") && current != null)
                     {
-                        case "description":
-                            current.Description = value;
-                            break;
+                        var parts = trimmedLine.Split(new[] { '=' }, 2);
+                        var key = parts[0].Trim();
+                        var value = parts[1].Trim();
 
-                        case "url":
-                            current.Url = value;
-                            break;
+                        switch (key)
+                        {
+                            case "description":
+                                current.Description = value;
+                                currentKey = "description";
+                                break;
+
+                            case "url":
+                                current.Url = value;
+                                currentKey = "url";
+                                break;
+
+                            default:
+                                currentKey = null;
+                                break;
+                        }
+                    }
+                    else if (currentKey == "description" && current != null)
+                    {
+                        // This line handles multi-line description values.
+                        // If the previous key was "description" and the current line does not contain a new key=value pair,
+                        // it is considered a continuation of the description.
+                        // We append the new line to the existing description, preserving line breaks with "\n".
+                        current.Description += "\n" + trimmedLine;
                     }
                 }
             }
@@ -115,10 +144,14 @@ namespace CFixer.Views
             return result;
         }
 
+        /// <summary>
+        /// Downloads and installs checked plugins.
+        /// If force is true, existing files will be overwritten.
+        /// </summary>
         private async Task InstallPlugins(bool force = false)
         {
-            var checkedIndices = listBoxPlugins.CheckedIndices;
-            if (checkedIndices.Count == 0)
+            var checkedItems = listPlugins.CheckedItems.Cast<ListViewItem>().ToList();
+            if (checkedItems.Count == 0)
             {
                 MessageBox.Show("Please check one or more plugins to download.");
                 return;
@@ -129,18 +162,22 @@ namespace CFixer.Views
 
             progressBarDownload.Visible = true;
             progressBarDownload.Value = 0;
-            progressBarDownload.Maximum = checkedIndices.Count;
+            progressBarDownload.Maximum = checkedItems.Count;
 
             int done = 0;
 
             using (var client = new WebClient())
             {
-                foreach (int index in checkedIndices)
+                foreach (var item in checkedItems)
                 {
-                    var plugin = plugins[index];
+                    var plugin = item.Tag as PluginEntry;
+                    if (plugin == null)
+                        continue;
+
                     string file = Path.Combine(savePath, Path.GetFileName(plugin.Url));
 
-                    if (!force && File.Exists(file))              // skip only if not in force‑mode
+                    // Skip download if file exists and not forcing overwrite
+                    if (!force && File.Exists(file))
                     {
                         progressBarDownload.Value = ++done;
                         continue;
@@ -150,7 +187,8 @@ namespace CFixer.Views
                     {
                         await client.DownloadFileTaskAsync(new Uri(plugin.Url), file);
                         installedPlugins.Add(Path.GetFileName(plugin.Url));
-                        listBoxPlugins.Items[index] = plugin.Name + " (Installed)";
+                        item.SubItems[1].Text = "Yes";  // Update Installed column
+                        //item.Checked = true;                // Ensure checked
                     }
                     catch (Exception ex)
                     {
@@ -164,71 +202,188 @@ namespace CFixer.Views
             progressBarDownload.Visible = false;
         }
 
-
         private async void btnPluginInstall_Click(object sender, EventArgs e)
         {
             await InstallPlugins(force: false);   // skip installed
         }
 
-
+        /// <summary>
+        /// Updates all plugins by selecting all and force-downloading them.
+        /// </summary>
         private async void btnPluginUpdateAll_Click(object sender, EventArgs e)
         {
-            // check every item
-            for (int i = 0; i < listBoxPlugins.Items.Count; i++)
-                listBoxPlugins.SetItemChecked(i, true);
+            // Check all items in the list
+            foreach (ListViewItem item in listPlugins.Items)
+            {
+                item.Checked = true;
+            }
 
-            await InstallPlugins(force: true);    // always overwrite
+            // Force install (overwrite even if already installed)
+            await InstallPlugins(force: true);
+
+            // Update the status of all plugins to "Updated"
+            foreach (ListViewItem item in listPlugins.Items)
+            {
+                item.SubItems[1].Text = "Updated";
+            }
+
             MessageBox.Show("All plugins updated.");
-        }
-
-        private void listBoxPlugins_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            int index = listBoxPlugins.SelectedIndex;
-            if (index >= 0 && index < plugins.Count)
-            {
-                btnDescription.Text = plugins[index].Description;
-            }
-        }
-
-        private void btnPluginOpen_Click(object sender, EventArgs e)
-        {
-            string pluginPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins");
-
-            if (Directory.Exists(pluginPath))
-            {
-                System.Diagnostics.Process.Start("explorer.exe", pluginPath);
-            }
-            else
-            {
-                MessageBox.Show("The plugins folder does not exist yet.");
-            }
         }
 
         private void btnPluginRemove_Click(object sender, EventArgs e)
         {
-            string pluginPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins");
-            var indices = listBoxPlugins.CheckedIndices.Cast<int>().ToList();
+            string pluginPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins");
 
-            if (indices.Count == 0)
+            var checkedItems = listPlugins.CheckedItems.Cast<ListViewItem>().ToList();
+
+            if (checkedItems.Count == 0)
             {
                 MessageBox.Show("No plugins selected.");
                 return;
             }
 
-            foreach (int i in indices)
+            foreach (var item in checkedItems)
             {
-                var plugin = plugins[i];
+                var plugin = item.Tag as PluginEntry;
+                if (plugin == null)
+                    continue;
+
                 string path = Path.Combine(pluginPath, Path.GetFileName(plugin.Url));
 
                 if (File.Exists(path))
                     File.Delete(path);
 
-                listBoxPlugins.Items[i] = plugin.Name;          // Remove (Installed) tag
-                listBoxPlugins.SetItemChecked(i, false);         // Uncheck
                 installedPlugins.Remove(Path.GetFileName(plugin.Url));
+                item.SubItems[1].Text = "No";
+                item.Checked = false;
             }
 
             MessageBox.Show("Selected plugins removed.");
+        }
+
+        private void btnPluginEdit_Click(object sender, EventArgs e)
+        {
+            if (listPlugins.SelectedItems.Count == 0)
+            {
+                MessageBox.Show("Please select a plugin first.");
+                return;
+            }
+
+            var plugin = listPlugins.SelectedItems[0].Tag as PluginEntry;
+            if (plugin == null) return;
+
+            var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins", Path.GetFileName(plugin.Url));
+
+            if (!File.Exists(path))
+            {
+                MessageBox.Show("Plugin file not found. Please install the plugin first.");
+                return;
+            }
+
+            try
+            {
+                var ext = Path.GetExtension(path).ToLower();
+                var editor = ext == ".ps1" ? "powershell_ise.exe" : "notepad.exe";
+                Process.Start(editor, $"\"{path}\"");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Could not open plugin: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Shows plugin information in a MessageBox.
+        /// </summary>
+        private void btnHelp_Click(object sender, EventArgs e)
+        {
+            if (listPlugins.SelectedItems.Count == 0)
+            {
+                MessageBox.Show("Please select a plugin first.");
+                return;
+            }
+
+            var plugin = listPlugins.SelectedItems[0].Tag as PluginEntry;
+            if (plugin != null)
+            {
+                MessageBox.Show(plugin.Description, $"Info: {plugin.Name}");
+            }
+        }
+
+        private void listPlugins_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (listPlugins.SelectedItems.Count == 0)
+                return;
+
+            var plugin = listPlugins.SelectedItems[0].Tag as PluginEntry;
+            if (plugin != null)
+            {
+                btnDescription.Text = plugin.Description;
+            }
+        }
+
+        /// <summary>
+        /// Updates the ListView with filtered plugin entries,
+        /// including name, install status, and plugin type.
+        /// Type is determined by plugin name ("(NX)" means native plugin),
+        /// or file extension (.ps1 = Powershell; others = Other).
+        /// </summary>
+        private void UpdateVisiblePlugins(string query = "")
+        {
+            visiblePlugins = plugins
+                .Where(p =>
+                    p.Name.ToLower().Contains(query) ||
+                    (p.Description?.ToLower() ?? "").Contains(query))
+                .ToList();
+
+            listPlugins.Items.Clear();
+
+            foreach (var plugin in visiblePlugins)
+            {
+                var fileName = Path.GetFileName(plugin.Url);
+                bool isInstalled = installedPlugins.Contains(fileName);
+
+                // Determine plugin type
+                string type;
+                if (plugin.Name.Trim().EndsWith("(NX)", StringComparison.OrdinalIgnoreCase))
+                {
+                    type = "NX";
+                }
+                else if (Path.GetExtension(plugin.Url).Equals(".ps1", StringComparison.OrdinalIgnoreCase))
+                {
+                    type = "Powershell";
+                }
+                else
+                {
+                    type = "Other";
+                }
+
+                var item = new ListViewItem(plugin.Name);
+                item.SubItems.Add(isInstalled ? "Yes" : "No");
+                item.SubItems.Add(type);
+                item.Tag = plugin;
+                item.Checked = isInstalled;
+
+                listPlugins.Items.Add(item);
+            }
+
+            // Auto-resize columns to fit header and content
+            foreach (ColumnHeader column in listPlugins.Columns)
+            {
+                column.Width = -2;
+            }
+        }
+
+
+        private void textSearch_TextChanged(object sender, EventArgs e)
+        {
+            string query = textSearch.Text.Trim().ToLower();
+            UpdateVisiblePlugins(query);
+        }
+
+        private void textSearch_Click(object sender, EventArgs e)
+        {
+            textSearch.Text = string.Empty;
         }
 
         private void btnPluginSubmit_Click(object sender, EventArgs e)
@@ -238,6 +393,11 @@ namespace CFixer.Views
                 FileName = "https://github.com/builtbybel/CrapFixer/blob/main/plugins/plugins_manifest.txt",
                 UseShellExecute = true
             });
+        }
+
+        private void linkPluginUsage_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            Process.Start("https://github.com/builtbybel/CrapFixer/blob/main/plugins/DemoPluginPack.ps1");
         }
     }
 }

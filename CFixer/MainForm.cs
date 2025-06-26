@@ -4,6 +4,7 @@ using CFixer.Views;
 using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -21,6 +22,7 @@ namespace CrapFixer
         public MainForm()
         {
             InitializeComponent();
+            IniStateManager.ApplyWindowState(this);
 
             // Set up the main navigation manager and logger
             _navigationManager = new NavigationManager(panelContainer);
@@ -28,66 +30,67 @@ namespace CrapFixer
 
             // Set up log actions controller
             _logActions = new LogActions(rtbLogger);
-            _logActionsController = new LogActionsController(comboLogActions, _logActions);
+        }
 
-            // Load features and plugins, and restore INI state if enabled
+        private async void MainForm_Shown(object sender, EventArgs e)
+        {
+            await InitializeUI(); // _ = InitializeUI();
+            InitializeAppState();
+        }
+
+        private void InitializeAppState()
+        {
+            // Load features and plugins into the tree view
             FeatureNodeManager.LoadFeatures(treeFeatures);
             PluginManager.LoadPlugins(treeFeatures);
-            if (IniStateManager.IsViewSettingEnabled("SETTINGS", "checkSaveToINI"))
-            {
-                IniStateManager.Load(treeFeatures, this);
-            }
+
+            // Load settings from INI file if enabled
+            IniStateManager.LoadFeaturesIfEnabled(treeFeatures);
         }
 
-        private void MainForm_Shown(object sender, EventArgs e)
+        private async Task InitializeUI()
         {
-            InitializeUI();
-        }
+            // Initialize the navigation handler with buttons
+            _navigationHandler = new NavigationHandler(btnFixer, btnRestore, btnTools, btnGitHub);
 
-        private void InitializeUI()
-        {
-            // Set the default active button
-            _navigationHandler = new NavigationHandler(btnHome, btnSettings);
-            _navigationHandler.NavigationButtonClicked += button =>
-            {
-                if (button == btnHome)
-                {
-                    _navigationManager.GoToMain();
-                }
-                else if (button == btnSettings)
-                {
-                    _navigationManager.SwitchView(new OptionsView());
-                }
-            };
+            // Load navigation icons
+            await _navigationHandler.LoadNavigationIcons();
 
-            // Set up link label for update check
-            linkUpdateCheck.LinkClicked += (_, __) =>
-             Process.Start($"https://builtbybel.github.io/CrapFixer/update-check.html?version={Program.GetAppVersion()}");
+            // Register navigation handler
+            _navigationHandler.NavigationButtonClicked += NavigationHandler_NavigationButtonClicked;
 
-            // Set up log actions controller
+            // Register click handlers for GitHub links
+            pictureHeader.Click += PictureHeader_Click;
+            lblHeader.Click += PictureHeader_Click;
+
+            // Re-initialize log actions controller (optional if not changed)
             _logActionsController = new LogActionsController(comboLogActions, _logActions);
 
-            // Set up version labels
-            async Task SetVersionLabels()
+            // Set version and OS info
+            lblVersionInfo.Text = $"v{Program.GetAppVersion()} ";
+            lblOSInfo.Text = await OSHelper.OSHelper.GetWindowsVersion();
+        }
+
+        // Handles navigation button clicks and switches views accordingly
+        private void NavigationHandler_NavigationButtonClicked(Button button)
+        {
+            if (button == btnFixer)
             {
-                lblVersionInfo.Text = $"v{Program.GetAppVersion()} ";
-                lblOSInfo.Text = await OSHelper.OSHelper.GetWindowsVersion();
+                _navigationManager.GoToMain();
             }
-            _ = SetVersionLabels();
+            else if (button == btnTools)
+            {
+                _navigationManager.SwitchView(new OptionsView());
+            }
         }
 
         private async void btnAnalyze_Click(object sender, EventArgs e)
         {
-            rtbLogger.Clear();
-
             // Analyze features
             await FeatureNodeManager.AnalyzeAll(treeFeatures.Nodes);
 
             // Analyze plugins
-            foreach (TreeNode node in treeFeatures.Nodes)
-            {
-                PluginManager.AnalyzeAll(node);
-            }
+            await PluginManager.AnalyzeAllPlugins(treeFeatures.Nodes);
 
             // Analyze apps
             await AnalyzeApps();
@@ -99,39 +102,34 @@ namespace CrapFixer
         /// <summary>
         /// Analyzes the apps and logs the results.
         /// </summary>
-        /// <returns></returns>
         private async Task AnalyzeApps()
         {
             checkedListBoxApps.Items.Clear();
 
-            // Try loading external bloatware list from file
-            string[] predefined = _appManager.LoadExternalBloatwareList();
+            // Try loading patterns from CFEnhancer.txt (located in Plugins folder)
+            var (bloatwarePatterns, whitelistPatterns, scanAll) = _appManager.LoadExternalBloatwarePatterns();
 
-            if (predefined.Length == 0)
+            if (bloatwarePatterns.Length == 0 && !scanAll)
             {
-                // Fallback to internal resource if external file not found or empty
-                predefined = Resources.PredefinedApps?
+                // Fallback to internal resource if external file not found or empty and scanAll is not enabled
+                bloatwarePatterns = Resources.PredefinedApps?
                     .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(s => s.Trim()).ToArray() ?? Array.Empty<string>();
+                    .Select(s => s.Trim().ToLower()).ToArray() ?? Array.Empty<string>();
 
-                // Logger.Log("Using built-in bloatware list.", LogLevel.Info);
+                whitelistPatterns = Array.Empty<string>();
+                Logger.Log("Using built-in bloatware list.", LogLevel.Info);
             }
             else
             {
-                Logger.Log("Using external bloatware list via CFEnhancer", LogLevel.Info);
+                Logger.Log("🔎 Plugin ready: CFEnhancer (external bloatware list)", LogLevel.Info);
             }
 
-            // Analyze installed apps against the predefined list
-            var apps = await _appManager.AnalyzeAndLogAppsAsync(predefined);
+            // Analyze installed apps based on patterns and whitelist, and optionally scan all
+            var apps = await _appManager.AnalyzeAndLogAppsAsync(bloatwarePatterns, whitelistPatterns, scanAll);
 
             foreach (var app in apps)
             {
                 checkedListBoxApps.Items.Add(app.FullName);
-            }
-
-            if (!apps.Any())
-            {
-                Logger.Log("✅ No bloatware apps found.", LogLevel.Info);
             }
         }
 
@@ -182,53 +180,64 @@ namespace CrapFixer
             }
         }
 
+        /// <summary>
+        /// Analyzes all plugins and features starting from the selected node from the context menu.
+        /// </summary>
         private async void analyzeMarkedFeatureToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (treeFeatures.SelectedNode is TreeNode selectedNode)
             {
-                if (PluginManager.IsPluginNode(selectedNode))
+                Logger.Log($"🔎 Analyzing Feature: {selectedNode.Text}", LogLevel.Info);
+
+                // If a single node is selected (leaf node with no children),
+                // always analyze this node regardless of its Checked state.
+                if (selectedNode.Nodes.Count == 0)
+                {
                     await PluginManager.AnalyzePlugin(selectedNode);
+                }
                 else
-                    Logger.Log($"🔎 Analyzing Feature: {selectedNode.Text}", LogLevel.Info);
+                {
+                    // If a parent node is selected (has children),
+                    // recursively analyze only the checked plugin nodes.
+                    await PluginManager.AnalyzeAll(selectedNode);
+                }
+
+                // Perform feature-specific analysis (non-plugin)
                 FeatureNodeManager.AnalyzeFeature(selectedNode);
             }
         }
 
-        private async void previewMarkedFeatureToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (treeFeatures.SelectedNode is TreeNode selectedNode)
-            {
-                if (PluginManager.IsPluginNode(selectedNode))
-                {
-                    await PluginManager.AnalyzePlugin(selectedNode);
-                }
-                else
-                {
-                    FeatureNodeManager.PreviewChanges(selectedNode);
-                }
-            }
-        }
-
+        /// <summary>
+        /// Fixes all checked plugin and feature nodes starting from the selected node from the context menu.
+        /// </summary>
         private async void fixMarkedFeatureToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (treeFeatures.SelectedNode is TreeNode selectedNode)
             {
-                if (PluginManager.IsPluginNode(selectedNode))
-                    await PluginManager.FixPlugin(selectedNode);
-                else
-                    Logger.Log($"🔧 Fixing Feature: {selectedNode.Text}", LogLevel.Info);
+                Logger.Log($"🔧 Fixing Feature: {selectedNode.Text}", LogLevel.Info);
+
+                // Recursively fix all checked feature nodes (non-plugin)
                 await FeatureNodeManager.FixFeature(selectedNode);
+
+                // Recursively fix all checked plugin nodes starting from the selected node
+                await PluginManager.FixPlugin(selectedNode);
             }
         }
 
-        private void restoreMarkedFeatureToolStripMenuItem_Click(object sender, EventArgs e)
+        /// <summary>
+        /// Restores the selected plugin or feature to its previous state from the context menu.
+        /// </summary>
+        private async void restoreMarkedFeatureToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (treeFeatures.SelectedNode is TreeNode selectedNode)
             {
                 if (PluginManager.IsPluginNode(selectedNode))
-                    PluginManager.RestorePlugin(selectedNode);
+                    // Restore the plugin using its Undo command if available!
+                    await PluginManager.RestorePlugin(selectedNode);
                 else
                     Logger.Log($"↩️ Restoring Feature: {selectedNode.Text}", LogLevel.Info);
+
+                // Perform feature-specific restore (non-plugin)
                 FeatureNodeManager.RestoreFeature(selectedNode);
             }
         }
@@ -238,18 +247,6 @@ namespace CrapFixer
             if (treeFeatures.SelectedNode is TreeNode selectedNode)
             {
                 FeatureNodeManager.ShowHelp(selectedNode);
-
-                // Prompt for online search
-                var result = MessageBox.Show(
-                    "Would you like to search online for more information about this feature?",
-                    "Online Help",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Question);
-
-                if (result == DialogResult.Yes)
-                {
-                    FeatureNodeManager.ShowHelpOnline(selectedNode);
-                }
             }
         }
 
@@ -322,18 +319,41 @@ namespace CrapFixer
 
         private void panelHeader_Paint(object sender, PaintEventArgs e)
         {
-            Panel panel = sender as Panel;
-            Graphics g = e.Graphics;
+            var panel = sender as Panel;
+            var g = e.Graphics;
 
-            // Fill background
+            // Solid background: #4D4D4D
             g.Clear(Color.FromArgb(77, 77, 77));
 
-            // Draw a single magenta line at the bottom
-            using (Pen pen = new Pen(Color.FromArgb(100, 255, 0, 255))) // Magenta with transparency
+            // Inset line effect (3D-like): light line + shadow line
+            Color baseColor = Color.FromArgb(80, 80, 80); // inset base
+
+            using (var topLine = new Pen(ControlPaint.Light(baseColor, 0.0f)))
+            using (var bottomLine = new Pen(ControlPaint.Dark(baseColor, 0.2f)))
             {
-                int y = panel.Height - 1; // Bottom-most pixel
-                g.DrawLine(pen, 0, y, panel.Width, y);
+                g.SmoothingMode = SmoothingMode.None;
+                g.DrawLine(topLine, 0, panel.Height - 2, panel.Width, panel.Height - 2);
+                g.DrawLine(bottomLine, 0, panel.Height - 1, panel.Width, panel.Height - 1);
             }
+        }
+
+        // Handles click on the header image to open the GitHub page
+        private void PictureHeader_Click(object sender, EventArgs e)
+        {
+            Utils.OpenGitHubPage(sender, e);
+        }
+
+        // Handles link click to check for updates
+        private void linkUpdateCheck_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            var updateUrl = $"https://builtbybel.github.io/CrapFixer/update-check.html?version={Program.GetAppVersion()}";
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = updateUrl,
+                UseShellExecute = true
+            };
+            Process.Start(psi);
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -342,6 +362,13 @@ namespace CrapFixer
             {
                 IniStateManager.Save(treeFeatures, this);
             }
+
+            Logger.OutputBox = null; // Remove reference
+        }
+
+        private void btnGitHub_Click(object sender, EventArgs e)
+        {
+            _navigationManager.SwitchView(new OptionsView());
         }
     }
 }
