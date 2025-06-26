@@ -49,4 +49,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: CFixer
-        path: CFixer/bin/Release/CFixer.exe
+        path: "CFixer/bin/Release/Crap Fixer.exe"
